@@ -1,0 +1,211 @@
+#include "stdlib.h"
+#include <stdio.h>
+#include "parse_tree.h"
+
+ptree *tree_root = NULL;
+
+void print_last_tree()
+{
+	printTree(tree_root, 0);
+}
+
+void printTree(ptree *root, int depth)
+{
+	int i;
+	for(i=0; i<depth; i++) {
+		printf("--");
+	}
+
+	if(root == NULL) {
+		printf("NULL\n");
+		return;
+	}
+
+	switch(root->type) {
+		case NODE_INT:
+			printf("Int %i\n", root->body.a_int);
+			break;
+		case NODE_STRING:
+			printf("String '%s'\n", root->body.a_string);
+			break;
+		case NODE_FLOAT:
+			printf("Float %f\n", root->body.a_float);
+			break;
+		case NODE_MAIN_EXTENDED:
+			printf("Main ext\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_FUNCTION_DEF:
+			printf("Function def\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_FUNCTION_TYPE_NAME_PAIR:
+			printf("Function type-name pair\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_FUNCTION_PARAM_BODY_PAIR:
+			printf("Function param-body pair\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_PARAMITER_DEF:
+			printf("Paramiter def\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_PARAMITER_CHAIN:
+			printf("Paramiter chain\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_RETURN:
+			printf("Return\n");
+			printTree(root->body.a_parent.left, depth+1);
+			break;
+		case NODE_FUNCTION_CALL:
+			printf("Function call\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+		case NODE_FUNCTION_ARG_CHAIN:
+			printf("Arg chain\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		default:
+			printf("Unknown %d\n", root->type);
+			break;
+	}
+}
+
+ptree* make_node_string(char *type)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_STRING;
+	tree->body.a_string = type;
+	return tree;
+}
+
+ptree* make_node_int(int type)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_INT;
+	tree->body.a_int = type;
+	return tree;
+}
+
+ptree* make_node_float(float type)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_FLOAT;
+	tree->body.a_float = type;
+	return tree;
+}
+
+ptree* make_node_body(ptree *line, ptree *remaining)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_BODY;
+	tree->body.a_parent.left = line;
+	tree->body.a_parent.right = remaining;
+	return tree;
+}
+
+ptree* make_node_paramiter_def(ptree *other_params, ptree *type, ptree *name)
+{
+	if(other_params == NULL) {
+		ptree *tree = malloc(sizeof(ptree));
+		tree->type = NODE_PARAMITER_DEF;
+		tree->body.a_parent.left = type;
+		tree->body.a_parent.right = name;
+	} else {
+		ptree *tree = malloc(sizeof(ptree));
+		tree->type = NODE_PARAMITER_CHAIN;
+		tree->body.a_parent.right = make_node_paramiter_def(NULL, type, name);
+		tree->body.a_parent.left = other_params;
+	}
+}
+
+ptree* make_node_function_def(ptree *type, ptree *name, ptree *params, ptree *body)
+{
+	ptree *def = malloc(sizeof(ptree));
+	ptree *name_pair = malloc(sizeof(ptree));
+	ptree *param_pair = malloc(sizeof(ptree));
+
+	def->type = NODE_FUNCTION_DEF;
+	def->body.a_parent.left = name_pair;
+	def->body.a_parent.right = param_pair;
+
+	name_pair->type = NODE_FUNCTION_TYPE_NAME_PAIR;
+	name_pair->body.a_parent.left = type;
+	name_pair->body.a_parent.right = name;
+
+	param_pair->type = NODE_FUNCTION_PARAM_BODY_PAIR;
+	param_pair->body.a_parent.left = params;
+	param_pair->body.a_parent.right = body;
+
+	tree_root = def;
+
+	return def;
+}
+
+ptree* make_main_extended(ptree *ext, ptree *line)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_MAIN_EXTENDED;
+	tree->body.a_parent.left = ext;
+	tree->body.a_parent.right = line;
+	tree_root = tree;
+	return tree;
+}
+
+ptree* make_return_node(ptree *returnValue)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_RETURN;
+	tree->body.a_parent.left = returnValue;
+	tree->body.a_parent.right = NULL;
+}
+
+ptree* make_function_call(ptree *fun_name, ptree *args)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_FUNCTION_CALL;
+	tree->body.a_parent.left = fun_name;
+	tree->body.a_parent.right = args;
+	return tree;
+}
+
+ptree* make_function_args(ptree *moreArgs, ptree *argValue)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_FUNCTION_ARG_CHAIN;
+	tree->body.a_parent.left = moreArgs;
+	tree->body.a_parent.right = argValue;
+}
+
+void free_tree(ptree *root)
+{
+	if(root == NULL) return;
+	switch(root->type) {
+		case NODE_INT:
+		case NODE_STRING:
+		case NODE_FLOAT:
+			free(root);
+			break;
+		default:
+			free_tree(root->body.a_parent.left);
+			free_tree(root->body.a_parent.right);
+			free(root);
+			break;
+	}
+}
+
+ptree* getTreeRoot()
+{
+	return tree_root;
+}
+
+
