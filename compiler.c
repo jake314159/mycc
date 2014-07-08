@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "compiler.h"
 #include "variable_store.h"
 
@@ -32,6 +33,33 @@ void create_head(ptree *tree)
 			create_head(tree->body.a_parent.left);
 			create_head(tree->body.a_parent.right);
 			break;
+	}
+}
+
+void move_values(char *from, char *too)
+{
+	bool from_pointer = false, too_pointer = false;
+	int i = 0;
+	while(too[i] != '\0') {
+		if(too[i] == '(') {
+			too_pointer = true;
+			break;
+		}
+		i++;
+	}
+	i=0;
+	while(from[i] != '\0') {
+		if(from[i] == '(') {
+			from_pointer = true;
+			break;
+		}
+		i++;
+	}
+	if(from_pointer && too_pointer) {
+		printf("    movq    %s, %%r11\n", from);
+		printf("    movq    %%r11, %s\n", too);
+	} else {
+		printf("    movq    %s, %s\n", from, too);
 	}
 }
 
@@ -90,9 +118,17 @@ char* to_value(ptree *tree)
 		case NODE_SUB:
 			printf("    movq    %s, %%r11\n", to_value(tree->body.a_parent.right));
 			printf("    movq    %s, %%r10\n", to_value(tree->body.a_parent.left));
-			printf("    subq    %%r11, %%r10\n");
+			printf("    subq    %%r10, %%r11\n");
+			printf("    movq    %%r11, %%r10\n");
 			c = malloc(sizeof(char)*20);
 			sprintf(c, "%%r10");
+			return c;
+			break;
+		case NODE_U_MINUS:
+			c = to_value(tree->body.a_parent.left);
+			printf("    movq    %s, %%r10\n", c);
+			printf("    negq    %%r10\n");
+			printf("    movq    %%r10, %s\n", c);
 			return c;
 			break;
 		default:
@@ -107,7 +143,7 @@ char* get_paramiter_location(int n)
 
 int prep_function_args(ptree *tree, int argNumber)
 {
-	if(tree == NULL) return;
+	if(tree == NULL) return 0;
 
 	//TODO if there are things in the function_args_section (eg. args for the current function) then move them (and their refs...
 		// from within local_vars)

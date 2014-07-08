@@ -138,7 +138,7 @@ void set_local_var(VAR_STORE *store, char* name, char* location)
 
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair != NULL) {
-		printf("    movq    %s, %s\n", location, pair->location);
+		move_values(location, pair->location);
 	}
 }
 

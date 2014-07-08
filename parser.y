@@ -69,18 +69,20 @@ argList:
 argListNotZero:
 	  argListNotZero ',' val	{ $$= make_function_args($1, $3); }
 	| val						{ $$= $1; }
-
+;
 val:
-	  val '+' val { $$= make_node_add($1, $3); }
-	| val '-' val { $$= make_node_sub($1, $3); }
-	| start INT { $$= make_node_body($1, $2); }
-	| start FLOAT { $$= make_node_body($1, $2); }
+	  val '+' val  { $$= make_node_add($1, $3); }
+	| val '-' val  { $$= make_node_sub($1, $3); }
+	| '-' val      { $$= make_node_unary_minus($2); }
+	| start INT    { $$= make_node_body($1, $2); }
+	| start FLOAT  { $$= make_node_body($1, $2); }
 	| start STRING { $$= make_node_body($1, $2); }
 	| INT { $$= $1; }
 	| FLOAT { $$= $1; }
 	| STRING { $$= make_node_var($1); }
 	| STRING '(' argList ')'	{ $$= make_function_call($1, $3); }
 ;
+
 
 %%
 #include <stdio.h>
