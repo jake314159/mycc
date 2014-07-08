@@ -175,7 +175,8 @@ void compile_tree_aux(ptree *tree)
 {
 	if(tree == NULL) printf("# NULL");
 
-	char *c1;
+	char *c1,*c2;
+	ptree *n1;
 
 	switch(tree->type) {
 		case NODE_FUNCTION_DEF:
@@ -228,6 +229,19 @@ void compile_tree_aux(ptree *tree)
 			break;
 		case NODE_VAR_DEF:
 			create_local_var(local_vars, tree->body.a_parent.right->body.a_string);
+			break;
+		case NODE_VAR_GLOBAL_DEF:
+			c1 = tree->body.a_parent.left->body.a_parent.right->body.a_string; //var name
+			n1 = tree->body.a_parent.right;
+			printf("\n\n"\
+			"    .globl	%s\n"\
+			"    .data\n"\
+			"    .align 4\n"\
+			"    .type	%s, @object\n"\
+			"    .size	%s, 4\n"\
+			"%s:\n"\
+			"    .long	%d\n"\
+			"    .text\n\n", c1,c1,c1,c1, n1==NULL?0:n1->body.a_int);
 			break;
 	//	case NODE_FUNCTION_ARG_CHAIN:
 	//		prep_function_args(tree, 1);

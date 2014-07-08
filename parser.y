@@ -41,6 +41,8 @@ start:
 
 mainLine:
 	  STRING STRING '(' paramiters ')' '{' functionBody '}' { $$= make_node_function_def($1, $2, $4, $7); }
+	| STRING STRING ';'										{ $$= make_node_global_var_def($1, $2, NULL); }
+	| STRING STRING '=' val ';'								{ $$= make_node_global_var_def($1, $2, $4); }
 ;
 paramiters:
 	  paramitersNotZero { $$= $1; }

@@ -127,11 +127,15 @@ char* get_local_var_location(VAR_STORE *store, char *name)
 
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair == NULL) {
-		return NULL;
+		//assume it is a global variable
+		char *c = malloc(strlen(name)+10);
+		sprintf(c, "%s(%%rip)", name);
+		return c;
 	} else {
 		return pair->location;
 	}
 }
+
 void set_local_var(VAR_STORE *store, char* name, char* location)
 {
 	if(store == NULL) return;
@@ -139,6 +143,11 @@ void set_local_var(VAR_STORE *store, char* name, char* location)
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair != NULL) {
 		move_values(location, pair->location);
+	} else {
+		//it's a global variable
+		char *c = malloc(strlen(name)+10);
+		sprintf(c, "%s(%%rip)", name);
+		move_values(location, c);
 	}
 }
 

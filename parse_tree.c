@@ -87,6 +87,11 @@ void printTree(ptree *root, int depth)
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_VAR_GLOBAL_DEF:
+			printf("Global var\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		case NODE_ADD:
 			printf("[+]\n");
 			printTree(root->body.a_parent.left, depth+1);
@@ -283,6 +288,20 @@ ptree* make_node_unary_minus(ptree *value)
 	node->type = NODE_U_MINUS;
 	node->body.a_parent.left = value;
 	node->body.a_parent.right = NULL;
+	return node;
+}
+
+ptree* make_node_global_var_def(ptree *varType, ptree *name, ptree *default_value)
+{
+	ptree *def_pair = malloc(sizeof(ptree));
+	def_pair->type = NODE_VAR_DEF;
+	def_pair->body.a_parent.left = varType;
+	def_pair->body.a_parent.right = name;
+
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_VAR_GLOBAL_DEF;
+	node->body.a_parent.left = def_pair;
+	node->body.a_parent.right = default_value;
 	return node;
 }
 
