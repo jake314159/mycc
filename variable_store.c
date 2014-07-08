@@ -175,7 +175,7 @@ void free_location(VAR_STORE *store, char *location)
 		//We need to move this variable somewhere else
 		stack_used += 8;
 		printf("    subq    $8, %%rsp\n"); //Add some space to the stack
-		printf("    movq    %s, -%d(%%rbp)\n", pair->location, stack_used);
+		printf("    movl    %s, -%d(%%rbp)\n", pair->location, stack_used);
 		sprintf(pair->location, "-%d(%%rbp)", stack_used);
 	}
 }

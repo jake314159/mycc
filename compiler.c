@@ -4,7 +4,7 @@
 #include "compiler.h"
 #include "variable_store.h"
 
-const char *function_arg_locations[6]  = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+const char *function_arg_locations[6]  = {"%edi", "%esi", "%edx", "%ecx", "%e8", "%e9"};
 
 int prep_function_args(ptree *tree, int argNumber);
 char* to_value(ptree *tree);
@@ -56,10 +56,10 @@ void move_values(char *from, char *too)
 		i++;
 	}
 	if(from_pointer && too_pointer) {
-		printf("    movq    %s, %%r11\n", from);
-		printf("    movq    %%r11, %s\n", too);
+		printf("    movl    %s, %%r11d\n", from);
+		printf("    movl    %%r11d, %s\n", too);
 	} else {
-		printf("    movq    %s, %s\n", from, too);
+		printf("    movl    %s, %s\n", from, too);
 	}
 }
 
@@ -83,52 +83,52 @@ char* to_value(ptree *tree)
 			i1 = functions_args_prep;
 			if(functions_args_prep >0) {
 				// The function paramiters are important so save them in the stack
-				printf("    subq    $%d, %%rsp\n", i1*8);
+				printf("    subl    $%d, %%esp\n", i1*8);
 				i2 = i1;
 				for(;i2>0; i2--) {
-					printf("    movq    %s, %d(%%rsp)\n", get_paramiter_location(i2-1), i2*8);
+					printf("    movl    %s, %d(%%esp)\n", get_paramiter_location(i2-1), i2*8);
 				}
 				functions_args_prep = 0;
 				prep_function_args(tree->body.a_parent.right, 0);
 				printf("    call    %s\n", tree->body.a_parent.left->body.a_string);
 				i2 = i1;
 				for(;i2>0; i2--) {
-					printf("    movq    %d(%%rsp), %s\n", i2*8, get_paramiter_location(i2-1));
+					printf("    movl    %d(%%esp), %s\n", i2*8, get_paramiter_location(i2-1));
 				}
 				functions_args_prep = i2;
-				printf("    addq    $%d, %%rsp\n", i1*8);
+				printf("    addl    $%d, %%esp\n", i1*8);
 			} else {
 				prep_function_args(tree->body.a_parent.right, 0);
 				printf("    call    %s\n", tree->body.a_parent.left->body.a_string);
 			}
 
 			functions_args_prep = 0;
-			sprintf(c, "%%rax");
+			sprintf(c, "%%eax");
 			return c;
 		case NODE_VAR:
 			c = get_local_var_location(local_vars, tree->body.a_string);
 			break;
 		case NODE_ADD:
-			printf("    movq    %s, %%r10\n", to_value(tree->body.a_parent.right));
-			printf("    addq    %s, %%r10\n", to_value(tree->body.a_parent.left));
+			printf("    movl    %s, %%r10d\n", to_value(tree->body.a_parent.right));
+			printf("    addl    %s, %%r10d\n", to_value(tree->body.a_parent.left));
 			c = malloc(sizeof(char)*20);
-			sprintf(c, "%%r10");
+			sprintf(c, "%%r10d");
 			return c;
 			break;
 		case NODE_SUB:
-			printf("    movq    %s, %%r11\n", to_value(tree->body.a_parent.right));
-			printf("    movq    %s, %%r10\n", to_value(tree->body.a_parent.left));
-			printf("    subq    %%r10, %%r11\n");
-			printf("    movq    %%r11, %%r10\n");
+			printf("    movl    %s, %%r11d\n", to_value(tree->body.a_parent.right));
+			printf("    movl    %s, %%r10d\n", to_value(tree->body.a_parent.left));
+			printf("    subl    %%r10d, %%r11d\n");
+			printf("    movl    %%r11d, %%r10d\n");
 			c = malloc(sizeof(char)*20);
-			sprintf(c, "%%r10");
+			sprintf(c, "%%r10d");
 			return c;
 			break;
 		case NODE_U_MINUS:
 			c = to_value(tree->body.a_parent.left);
-			printf("    movq    %s, %%r10\n", c);
-			printf("    negq    %%r10\n");
-			printf("    movq    %%r10, %s\n", c);
+			printf("    movl    %s, %%r10d\n", c);
+			printf("    negl    %%r10d\n");
+			printf("    movl    %%r10d, %s\n", c);
 			return c;
 			break;
 		default:
@@ -149,7 +149,7 @@ int prep_function_args(ptree *tree, int argNumber)
 		// from within local_vars)
 
 	if(argNumber == 0 && tree->type != NODE_FUNCTION_ARG_CHAIN) {
-		printf("    movq   %s, %s\n", to_value(tree), get_paramiter_location(0));
+		printf("    movl   %s, %s\n", to_value(tree), get_paramiter_location(0));
 		functions_args_prep++;
 		return;
 	}
@@ -157,14 +157,14 @@ int prep_function_args(ptree *tree, int argNumber)
 	if(tree->body.a_parent.left->type == NODE_FUNCTION_ARG_CHAIN) {
 		argNumber = prep_function_args(tree->body.a_parent.left, argNumber);
 	} else {
-		printf("    movq   %s, %s\n", to_value(tree->body.a_parent.left), get_paramiter_location(argNumber));
+		printf("    movl   %s, %s\n", to_value(tree->body.a_parent.left), get_paramiter_location(argNumber));
 		argNumber++;
 		functions_args_prep++;
 	}
 	if(tree->body.a_parent.right->type == NODE_FUNCTION_ARG_CHAIN) {
 		argNumber = prep_function_args(tree->body.a_parent.right, argNumber);
 	} else {
-		printf("    movq   %s, %s\n", to_value(tree->body.a_parent.right) , get_paramiter_location(argNumber));
+		printf("    movl   %s, %s\n", to_value(tree->body.a_parent.right) , get_paramiter_location(argNumber));
 		argNumber++;
 		functions_args_prep++;
 	}
@@ -204,7 +204,7 @@ void compile_tree_aux(ptree *tree)
 			break;
 		case NODE_RETURN:
 			c1 = to_value(tree->body.a_parent.left);
-			printf("    movq    %s,  %%rax\n", c1 );
+			printf("    movl    %s,  %%eax\n", c1 );
 			free(c1);
 			break;
 		case NODE_MAIN_EXTENDED:
