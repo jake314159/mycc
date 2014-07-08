@@ -4,7 +4,7 @@
 enum tree_type {
 	NODE_INT, NODE_STRING, NODE_FLOAT, NODE_BODY, NODE_PARAMITER_DEF, NODE_PARAMITER_CHAIN,
 	NODE_FUNCTION_DEF, NODE_FUNCTION_TYPE_NAME_PAIR, NODE_FUNCTION_PARAM_BODY_PAIR,
-	NODE_MAIN_EXTENDED,
+	NODE_MAIN_EXTENDED, NODE_VAR,
 	NODE_FUNCTION_CALL, NODE_FUNCTION_ARG_CHAIN,
 	NODE_RETURN
 };
@@ -31,6 +31,7 @@ void print_last_tree();
 ptree* make_return_node(ptree *returnValue);
 ptree* make_function_call(ptree *fun_name, ptree *args);
 ptree* make_function_args(ptree *moreArgs, ptree *argValue);
+ptree* make_node_var(ptree *string_node); //Converts a string node to a var node
 
 void free_tree(ptree *root);
 ptree* getTreeRoot();

@@ -74,7 +74,7 @@ val:
 	| start STRING { $$= make_node_body($1, $2); }
 	| INT { $$= $1; }
 	| FLOAT { $$= $1; }
-	| STRING { $$= $1; }
+	| STRING { $$= make_node_var($1); }
 	| STRING '(' argList ')'	{ $$= make_function_call($1, $3); }
 ;
 

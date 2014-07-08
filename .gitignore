@@ -21,3 +21,14 @@
 *.i*86
 *.x86_64
 *.hex
+
+*~
+*.s
+eg/*
+*test*
+
+lex.yy.c
+mycc
+y.tab.c
+y.tab.h
+

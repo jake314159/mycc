@@ -28,6 +28,9 @@ void printTree(ptree *root, int depth)
 		case NODE_STRING:
 			printf("String '%s'\n", root->body.a_string);
 			break;
+		case NODE_VAR:
+			printf("Variable '%s'\n", root->body.a_string);
+			break;
 		case NODE_FLOAT:
 			printf("Float %f\n", root->body.a_float);
 			break;
@@ -208,4 +211,9 @@ ptree* getTreeRoot()
 	return tree_root;
 }
 
+ptree* make_node_var(ptree *string_node)
+{
+	string_node->type = NODE_VAR;
+	return string_node;
+}
 
