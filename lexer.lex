@@ -15,7 +15,7 @@ return {return RETURN;}
 	yylval.tval = make_node_string(res);
 	return STRING;
 }
-[\(\)\{\},;]    { return yytext[0]; }
+[\(\)\{\},;=]    { return yytext[0]; }
 
 . ;
 %%

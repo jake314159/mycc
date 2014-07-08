@@ -77,6 +77,16 @@ void printTree(ptree *root, int depth)
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_VAR_ASSIGN:
+			printf("Variable assignment\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_VAR_DEF:
+			printf("Variable define\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		default:
 			printf("Unknown %d\n", root->type);
 			break;
@@ -215,5 +225,21 @@ ptree* make_node_var(ptree *string_node)
 {
 	string_node->type = NODE_VAR;
 	return string_node;
+}
+
+ptree* make_var_assign(ptree *varName, ptree *value)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_VAR_ASSIGN;
+	node->body.a_parent.left = varName;
+	node->body.a_parent.right = value;
+}
+
+ptree* make_var_def(ptree *varType, ptree *name)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_VAR_DEF;
+	node->body.a_parent.left = varType;
+	node->body.a_parent.right = name;
 }
 

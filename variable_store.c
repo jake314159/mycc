@@ -74,6 +74,7 @@ VAR_PAIR* get_var_pair_for_location(VAR_STORE *store,  char* location)
 	return NULL;
 }
 
+//and make a new one on the end (which is the one which is returned)
 VAR_PAIR* get_last_pair(VAR_STORE *store)
 {
 	if(store == NULL) return NULL;
@@ -131,6 +132,32 @@ char* get_local_var_location(VAR_STORE *store, char *name)
 		return pair->location;
 	}
 }
+void set_local_var(VAR_STORE *store, char* name, char* location)
+{
+	if(store == NULL) return;
+
+	VAR_PAIR *pair = get_var_pair(store, name);
+	if(pair != NULL) {
+		printf("    movq    %s, %s\n", location, pair->location);
+	}
+}
+
+void create_local_var(VAR_STORE *store, char* name)
+{
+	if(store == NULL) return;
+	char *temp = malloc(sizeof(char) * (strlen(name) + 1));
+	strcpy(temp, name);
+	name = temp;
+
+	VAR_PAIR *pair = get_last_pair(store);
+
+	pair->name = name;
+	pair->location = malloc(sizeof(char) * 20);
+
+	stack_used += 8;
+	printf("    subq    $8, %%rsp\n"); //Add some space to the stack
+	sprintf(pair->location, "-%d(%%rbp)", stack_used);
+}
 
 void free_location(VAR_STORE *store, char *location)
 {
@@ -139,7 +166,7 @@ void free_location(VAR_STORE *store, char *location)
 		//We need to move this variable somewhere else
 		stack_used += 8;
 		printf("    subq    $8, %%rsp\n"); //Add some space to the stack
-		printf("    mov     %s, -%d(%%rbp)\n", pair->location, stack_used);
+		printf("    movq    %s, -%d(%%rbp)\n", pair->location, stack_used);
 		sprintf(pair->location, "-%d(%%rbp)", stack_used);
 	}
 }
@@ -151,3 +178,4 @@ void empty_stack_of_local_vars()
 		stack_used = 0;
 	}
 }
+

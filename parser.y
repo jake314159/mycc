@@ -57,6 +57,8 @@ functionBody:
 expr:
 	  RETURN val ';' { $$= make_return_node($2); }
 	| val ';'		{ $$= $1; }
+	| STRING STRING '=' val ';' { $$= make_main_extended(make_var_def($1, $2), make_var_assign($2, $4)); }
+	| STRING '=' val ';' { $$= make_var_assign($1, $3); }
 ;
 
 argList:
@@ -86,7 +88,7 @@ extern int yylex();
 extern int yyparse();
 extern FILE *yyin;
 
-main() {
+main(int argc, char **argv) {
 	/*// open a file handle to a particular file:
 	FILE *myfile = fopen("a.snazzle.file", "r");
 	// make sure it is valid:
@@ -103,7 +105,9 @@ main() {
 		yyparse();
 	} while (!feof(yyin));
 
-	//print_last_tree();
+	if(argc>=2) { //TODO this is only tempory
+		print_last_tree();
+	}
 	//printf("\n\n## COMPILED ##\n\n");
 	compile_tree(getTreeRoot());
 
