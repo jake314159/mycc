@@ -51,7 +51,7 @@ char* to_value(ptree *tree)
 				free_location(local_vars, get_paramiter_location(i));
 			}
 
-			c = malloc(sizeof(char)*15);
+			c = malloc(sizeof(char)*20);
 			i1 = functions_args_prep;
 			if(functions_args_prep >0) {
 				// The function paramiters are important so save them in the stack
@@ -79,6 +79,21 @@ char* to_value(ptree *tree)
 			return c;
 		case NODE_VAR:
 			c = get_local_var_location(local_vars, tree->body.a_string);
+			break;
+		case NODE_ADD:
+			printf("    movq    %s, %%r10\n", to_value(tree->body.a_parent.right));
+			printf("    addq    %s, %%r10\n", to_value(tree->body.a_parent.left));
+			c = malloc(sizeof(char)*20);
+			sprintf(c, "%%r10");
+			return c;
+			break;
+		case NODE_SUB:
+			printf("    movq    %s, %%r11\n", to_value(tree->body.a_parent.right));
+			printf("    movq    %s, %%r10\n", to_value(tree->body.a_parent.left));
+			printf("    subq    %%r11, %%r10\n");
+			c = malloc(sizeof(char)*20);
+			sprintf(c, "%%r10");
+			return c;
 			break;
 		default:
 			return NULL;

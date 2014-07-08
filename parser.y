@@ -71,7 +71,9 @@ argListNotZero:
 	| val						{ $$= $1; }
 
 val:
-	  start INT { $$= make_node_body($1, $2); }
+	  val '+' val { $$= make_node_add($1, $3); }
+	| val '-' val { $$= make_node_sub($1, $3); }
+	| start INT { $$= make_node_body($1, $2); }
 	| start FLOAT { $$= make_node_body($1, $2); }
 	| start STRING { $$= make_node_body($1, $2); }
 	| INT { $$= $1; }

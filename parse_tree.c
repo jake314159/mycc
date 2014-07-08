@@ -87,6 +87,16 @@ void printTree(ptree *root, int depth)
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_ADD:
+			printf("[+]\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_SUB:
+			printf("[-]\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		default:
 			printf("Unknown %d\n", root->type);
 			break;
@@ -233,6 +243,7 @@ ptree* make_var_assign(ptree *varName, ptree *value)
 	node->type = NODE_VAR_ASSIGN;
 	node->body.a_parent.left = varName;
 	node->body.a_parent.right = value;
+	return node;
 }
 
 ptree* make_var_def(ptree *varType, ptree *name)
@@ -241,5 +252,24 @@ ptree* make_var_def(ptree *varType, ptree *name)
 	node->type = NODE_VAR_DEF;
 	node->body.a_parent.left = varType;
 	node->body.a_parent.right = name;
+	return node;
+}
+
+ptree* make_node_add(ptree *left, ptree *right)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_ADD;
+	node->body.a_parent.left = left;
+	node->body.a_parent.right = right;
+	return node;
+}
+
+ptree* make_node_sub(ptree *left, ptree *right)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_SUB;
+	node->body.a_parent.left = left;
+	node->body.a_parent.right = right;
+	return node;
 }
 
