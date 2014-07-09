@@ -15,6 +15,7 @@ VAR_STORE *local_vars = NULL;
 int functions_args_prep = 0; //Number of args we have prepared ready for a function call
 
 int params_set = 0;
+int string_const_number = 0;
 
 void create_head(ptree *tree)
 {
@@ -25,9 +26,20 @@ void create_head(ptree *tree)
 		case NODE_STRING:
 		case NODE_FLOAT:
 			break;
+		case NODE_STRING_CONST:
+			printf(".LC%d:\n", string_const_number);
+			printf("    .string %s\n\n", tree->body.a_string);
+			free(tree->body.a_string);
+			char *c = malloc(sizeof(char)*20);
+			sprintf(c, "$.LC%d", string_const_number); 
+			tree->body.a_string = c;
+			string_const_number++;
+			break;
 		case NODE_FUNCTION_DEF:
 			printf("    .globl   %s\n", tree->body.a_parent.left->body.a_parent.right->body.a_string);
 			printf("    .type    %s, @function\n\n", tree->body.a_parent.left->body.a_parent.right->body.a_string);
+			create_head(tree->body.a_parent.left);
+			create_head(tree->body.a_parent.right);
 			break;
 		default:
 			create_head(tree->body.a_parent.left);
@@ -54,7 +66,6 @@ void move_values(char *from, char *too)
 		}
 		i++;
 	}
-
 	i = 0;
 	while(from[i] != '\0' && too[i] != '\0') {
 		if(from[i] != too[i]) {
@@ -65,9 +76,11 @@ void move_values(char *from, char *too)
 	}
 
 	if(from_pointer && too_pointer) {
-		printf("    movl    %s, %%r11d\n", from);
-		printf("    movl    %%r11d, %s\n", too);
-	} else if(!same) {
+		char *c = get_free_register();
+		printf("    movl    %s, %s\n", from, c);
+		printf("    movl    %s, %s\n", c, too);
+		free_register(c);
+	} else if (!same) {
 		printf("    movl    %s, %s\n", from, too);
 	}
 }
@@ -75,7 +88,7 @@ void move_values(char *from, char *too)
 char* to_value(ptree *tree)
 {
 	int length, i1, i2;
-	char *c;
+	char *c, *c2;
 	switch(tree->type) {
 		case NODE_INT:
 			c = malloc(sizeof(char)*15);
@@ -138,6 +151,11 @@ char* to_value(ptree *tree)
 			printf("    movl    %%r10d, %s\n", c);
 			return c;
 			break;
+		case NODE_STRING_CONST:
+			c = malloc(sizeof(char) * 50); //TODO should be able to be shorter
+			sprintf(c, "%s", tree->body.a_string);
+			return c;
+			break;
 		default:
 			return NULL;
 	}
@@ -194,7 +212,6 @@ void compile_tree_aux(ptree *tree)
 
 			local_vars = malloc(sizeof(VAR_STORE));
 			init_local_store(local_vars);
-			//add_local_var(local_vars, "x", "%rdi");
 
 			compile_tree_aux(tree->body.a_parent.right);
 			empty_stack_of_local_vars();
@@ -212,7 +229,6 @@ void compile_tree_aux(ptree *tree)
 		case NODE_RETURN:
 			c1 = to_value(tree->body.a_parent.left);
 			printf("    movl    %s,  %%eax\n", c1 );
-			free(c1);
 			break;
 		case NODE_MAIN_EXTENDED:
 			compile_tree_aux(tree->body.a_parent.left);

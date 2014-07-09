@@ -20,9 +20,9 @@ VAR_PAIR* get_var_pair_for_location(VAR_STORE *store,  char* location);
 
 int stack_used = 0;
 
-char *register_name[7] =          {"%%r10d", "%%r11d", "%%ebx", "%%r12d", "%%r13d", "%%r14d", "%%r15d"};
-bool register_used[7] = 		  {false,    false,    false,   false,    false,    false,    false   };
-char *register_save_location[7] = {NULL,     NULL,     NULL,    NULL,     NULL,     NULL,     NULL    };
+char *register_name[7] =          {"%r10d", "%r11d", "%ebx", "%r12d", "%r13d", "%r14d", "%r15d"};
+bool register_used[7] = 		  {true,    false,   false,  false,   false,   false,   false  };
+char *register_save_location[7] = {NULL,    NULL,    NULL,   NULL,    NULL,    NULL,    NULL   };
 
 int compare_string(char* string1, char* string2)
 {
@@ -177,7 +177,7 @@ char* get_local_var_location(VAR_STORE *store, char *name)
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair == NULL) {
 		//assume it is a global variable
-		char *c = malloc(strlen(name)+10);
+		char *c = malloc(sizeof(char)*(strlen(name)+20));
 		sprintf(c, "%s(%%rip)", name);
 		return c;
 	} else {
@@ -194,7 +194,7 @@ void set_local_var(VAR_STORE *store, char* name, char* location)
 		move_values(location, pair->location);
 	} else {
 		//it's a global variable
-		char *c = malloc(strlen(name)+10);
+		char *c = malloc(sizeof(char) *(strlen(name)+20));
 		sprintf(c, "%s(%%rip)", name);
 		move_values(location, c);
 	}
@@ -233,9 +233,11 @@ void empty_stack_of_local_vars()
 {
 	int i=2;
 	for(;i<7;i++) {
-		register_used[i] = false;
-		move_values(register_save_location[i], register_name[i]);
-		register_save_location[i] = NULL;
+		if(register_save_location[i] != NULL) {
+			register_used[i] = false;
+			move_values(register_save_location[i], register_name[i]);
+			register_save_location[i] = NULL;
+		}
 	}
 
 	if(stack_used > 0) {

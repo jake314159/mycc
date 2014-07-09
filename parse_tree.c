@@ -28,6 +28,9 @@ void printTree(ptree *root, int depth)
 		case NODE_STRING:
 			printf("String '%s'\n", root->body.a_string);
 			break;
+		case NODE_STRING_CONST:
+			printf("String constant '%s'\n", root->body.a_string);
+			break;
 		case NODE_VAR:
 			printf("Variable '%s'\n", root->body.a_string);
 			break;
@@ -116,6 +119,14 @@ ptree* make_node_string(char *type)
 {
 	ptree *tree = malloc(sizeof(ptree));
 	tree->type = NODE_STRING;
+	tree->body.a_string = type;
+	return tree;
+}
+
+ptree* make_node_string_const(char *type)
+{
+	ptree *tree = malloc(sizeof(ptree));
+	tree->type = NODE_STRING_CONST;
 	tree->body.a_string = type;
 	return tree;
 }
@@ -224,6 +235,7 @@ void free_tree(ptree *root)
 	switch(root->type) {
 		case NODE_INT:
 		case NODE_STRING:
+		case NODE_STRING_CONST:
 		case NODE_FLOAT:
 			free(root);
 			break;

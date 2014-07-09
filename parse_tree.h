@@ -3,6 +3,7 @@
 
 enum tree_type {
 	NODE_INT, NODE_STRING, NODE_FLOAT, NODE_BODY, NODE_PARAMITER_DEF, NODE_PARAMITER_CHAIN,
+	NODE_STRING_CONST,
 	NODE_FUNCTION_DEF, NODE_FUNCTION_TYPE_NAME_PAIR, NODE_FUNCTION_PARAM_BODY_PAIR,
 	NODE_MAIN_EXTENDED, NODE_VAR, NODE_VAR_ASSIGN, NODE_VAR_DEF, NODE_VAR_GLOBAL_DEF,
 	NODE_ADD, NODE_SUB, NODE_U_MINUS, 
@@ -38,6 +39,7 @@ ptree* make_node_add(ptree *left, ptree *right);
 ptree* make_node_sub(ptree *left, ptree *right);
 ptree* make_node_unary_minus(ptree *value);
 ptree* make_node_global_var_def(ptree *varType, ptree *name, ptree *default_value);
+ptree* make_node_string_const(char *type);
 
 ptree* make_var_def(ptree *varType, ptree *name);
 

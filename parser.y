@@ -1,13 +1,15 @@
 %{
+#define YYDEBUG 1
 #include <stdio.h>
 #include <stdlib.h>
 #include "parse_tree.h"
 #include "compiler.h"
+extern int line_number;
 %}
 
 // define the "terminal symbol" token types I'm going to use, which
 // are in CAPS only because it's a convention:
-%token INT FLOAT STRING PTREE RETURN
+%token INT FLOAT STRING PTREE RETURN STRING_CONST
 
 // yacc fundamentally works by asking lex to get the next token, which it returns as
 // an object of type "yystype".  But
@@ -27,8 +29,9 @@
 %token <tval> FLOAT
 %token <tval> STRING
 %token <tval> PTREE
+%token <tval> STRING_CONST
 
-%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase
+%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase varAss
 
 %%
 // this is the actual grammar that yacc will parse, but for right now it's just
@@ -36,8 +39,8 @@
 // make a real one shortly:
 start:
 	  start mainLine { $$= make_main_extended($1, $2); }
-	| mainLine		{ $$=$1; }
-	;
+	| mainLine		 { $$=$1; }
+;
 
 mainLine:
 	  STRING STRING '(' paramiters ')' '{' functionBody '}' { $$= make_node_function_def($1, $2, $4, $7); }
@@ -58,11 +61,15 @@ functionBody:
 ;
 expr:
 	  RETURN val ';' { $$= make_return_node($2); }
-	| val ';'		{ $$= $1; }
-	| STRING STRING '=' val ';' { $$= make_main_extended(make_var_def($1, $2), make_var_assign($2, $4)); }
-	| STRING '=' val ';' { $$= make_var_assign($1, $3); }
+	| varAss ';'	{ $$= $1; }
+	| STRING '(' argList ')' ';'{ $$= make_function_call($1, $3); } // This is also in val
+//	| val ';'		{ $$= $1; } //This overrides varAss
 ;
-
+varAss:
+	  STRING STRING '=' val { $$= make_main_extended(make_var_def($1, $2), make_var_assign($2, $4)); }
+	| STRING '=' val { $$= make_var_assign($1, $3); }
+	| STRING STRING { $$= make_var_def($1, $2); }
+;
 argList:
 	  argListNotZero { $$= $1; }
 	|   { $$=NULL; }
@@ -87,6 +94,8 @@ valBase:
 	| FLOAT { $$= $1; }
 	| STRING { $$= make_node_var($1); }
 	| STRING '(' argList ')'	{ $$= make_function_call($1, $3); }
+	| '(' val ')'			{ $$=$2; }
+	| STRING_CONST	{ $$= $1; }
 ;
 
 %%
@@ -124,7 +133,7 @@ main(int argc, char **argv) {
 }
 
 void yyerror(char *s) {
-	printf("EEK, parse error!  Message: %s\n", s);
+	printf("EEK, parse error!  Line %d\n Message: %s\n", line_number, s);
 	// might as well halt now:
 	exit(-1);
 }
