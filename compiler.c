@@ -27,6 +27,7 @@ void create_head(ptree *tree)
 		case NODE_FLOAT:
 			break;
 		case NODE_STRING_CONST:
+			printf("    .section    .rodata\n");
 			printf(".LC%d:\n", string_const_number);
 			printf("    .string %s\n\n", tree->body.a_string);
 			free(tree->body.a_string);
@@ -237,6 +238,7 @@ void compile_tree_aux(ptree *tree)
 		case NODE_FUNCTION_CALL:
 			//TODO sort out paramiters in right subtree
 			prep_function_args(tree->body.a_parent.right, 0);
+			printf("    movl    $0, %%eax\n");
 			printf("    call    %s\n", tree->body.a_parent.left->body.a_string);
 			functions_args_prep = 0;
 			break;

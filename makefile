@@ -1,5 +1,5 @@
 
-CC_FLAGS = -Wall 
+CC_FLAGS =
 
 main: mycc
 
