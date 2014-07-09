@@ -38,12 +38,11 @@ void create_head(ptree *tree)
 
 void move_values(char *from, char *too)
 {
-	bool from_pointer = false, too_pointer = false;
+	bool from_pointer = false, too_pointer = false, same = true;
 	int i = 0;
 	while(too[i] != '\0') {
 		if(too[i] == '(') {
 			too_pointer = true;
-			break;
 		}
 		i++;
 	}
@@ -55,10 +54,20 @@ void move_values(char *from, char *too)
 		}
 		i++;
 	}
+
+	i = 0;
+	while(from[i] != '\0' && too[i] != '\0') {
+		if(from[i] != too[i]) {
+			same = false;
+			break;
+		}
+		i++;
+	}
+
 	if(from_pointer && too_pointer) {
 		printf("    movl    %s, %%r11d\n", from);
 		printf("    movl    %%r11d, %s\n", too);
-	} else {
+	} else if(!same) {
 		printf("    movl    %s, %s\n", from, too);
 	}
 }
@@ -109,17 +118,15 @@ char* to_value(ptree *tree)
 			c = get_local_var_location(local_vars, tree->body.a_string);
 			break;
 		case NODE_ADD:
-			printf("    movl    %s, %%r10d\n", to_value(tree->body.a_parent.right));
-			printf("    addl    %s, %%r10d\n", to_value(tree->body.a_parent.left));
+			move_values(to_value(tree->body.a_parent.left), "%r10d");
+			printf("    addl    %s, %%r10d\n", to_value(tree->body.a_parent.right));
 			c = malloc(sizeof(char)*20);
 			sprintf(c, "%%r10d");
 			return c;
 			break;
 		case NODE_SUB:
-			printf("    movl    %s, %%r11d\n", to_value(tree->body.a_parent.right));
-			printf("    movl    %s, %%r10d\n", to_value(tree->body.a_parent.left));
-			printf("    subl    %%r10d, %%r11d\n");
-			printf("    movl    %%r11d, %%r10d\n");
+			move_values(to_value(tree->body.a_parent.left), "%r10d");
+			printf("    subl    %s, %%r10d\n", to_value(tree->body.a_parent.right));
 			c = malloc(sizeof(char)*20);
 			sprintf(c, "%%r10d");
 			return c;

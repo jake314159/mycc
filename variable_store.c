@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "variable_store.h"
 
 typedef struct VAR_PAIR{
@@ -163,9 +164,17 @@ void create_local_var(VAR_STORE *store, char* name)
 	pair->name = name;
 	pair->location = malloc(sizeof(char) * 20);
 
-	stack_used += 8;
-	printf("    subq    $8, %%rsp\n"); //Add some space to the stack
+	stack_used += 4;
+	printf("    subq    $4, %%rsp\n"); //Add some space to the stack
 	sprintf(pair->location, "-%d(%%rbp)", stack_used);
+}
+
+char* get_stack_space(int amount)
+{
+	if(amount<=0) return NULL;
+	stack_used += 4;
+	char *c = malloc(sizeof(char)*20);
+	sprintf(c, "-%d(%%rbp)", stack_used);
 }
 
 void free_location(VAR_STORE *store, char *location)
@@ -173,8 +182,8 @@ void free_location(VAR_STORE *store, char *location)
 	VAR_PAIR *pair = get_var_pair_for_location(store, location);
 	if(pair != NULL) {
 		//We need to move this variable somewhere else
-		stack_used += 8;
-		printf("    subq    $8, %%rsp\n"); //Add some space to the stack
+		stack_used += 4;
+		printf("    subq    $4, %%rsp\n"); //Add some space to the stack
 		printf("    movl    %s, -%d(%%rbp)\n", pair->location, stack_used);
 		sprintf(pair->location, "-%d(%%rbp)", stack_used);
 	}

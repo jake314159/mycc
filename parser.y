@@ -28,7 +28,7 @@
 %token <tval> STRING
 %token <tval> PTREE
 
-%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero
+%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase
 
 %%
 // this is the actual grammar that yacc will parse, but for right now it's just
@@ -73,9 +73,13 @@ argListNotZero:
 	| val						{ $$= $1; }
 ;
 val:
-	  val '+' val  { $$= make_node_add($1, $3); }
-	| val '-' val  { $$= make_node_sub($1, $3); }
-	| '-' val      { $$= make_node_unary_minus($2); }
+	  val '+' valBase  { $$= make_node_add($1, $3); }
+	| val '-' valBase  { $$= make_node_sub($1, $3); }
+	| valBase		{ $$= $1; }
+;
+
+valBase:
+	  '-' val      { $$= make_node_unary_minus($2); }
 	| start INT    { $$= make_node_body($1, $2); }
 	| start FLOAT  { $$= make_node_body($1, $2); }
 	| start STRING { $$= make_node_body($1, $2); }
@@ -84,7 +88,6 @@ val:
 	| STRING { $$= make_node_var($1); }
 	| STRING '(' argList ')'	{ $$= make_function_call($1, $3); }
 ;
-
 
 %%
 #include <stdio.h>
