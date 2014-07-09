@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "variable_store.h"
 
 typedef struct VAR_PAIR{
@@ -19,6 +20,10 @@ VAR_PAIR* get_var_pair_for_location(VAR_STORE *store,  char* location);
 
 int stack_used = 0;
 
+char *register_name[7] =          {"%%r10d", "%%r11d", "%%ebx", "%%r12d", "%%r13d", "%%r14d", "%%r15d"};
+bool register_used[7] = 		  {false,    false,    false,   false,    false,    false,    false   };
+char *register_save_location[7] = {NULL,     NULL,     NULL,    NULL,     NULL,     NULL,     NULL    };
+
 int compare_string(char* string1, char* string2)
 {
     int i = 0;
@@ -33,6 +38,49 @@ int compare_string(char* string1, char* string2)
         i++;
     }
     return 0; //0 for equal
+}
+
+char* get_stack_space(int amount)
+{
+	if(amount<=0) return NULL;
+	stack_used += 4;
+	char *c = malloc(sizeof(char)*20);
+	sprintf(c, "-%d(%%rbp)", stack_used);
+}
+
+char* get_free_register()
+{
+	int i = 0;
+	//The first 2 don't need to be saved so try to use these first
+	for(;i<2; i++) {
+		if(!register_used[i]) {
+			register_used[i] = true;
+			return register_name[i];
+		}
+	}
+
+	// These regs need to be put back to their original values so lets save it
+	for(;i<7;i++) {
+		if(!register_used[i]) {
+			register_used[i] = true;
+			if(register_save_location[i] == NULL) {
+				register_save_location[i] = get_stack_space(4);
+				move_values(register_name[i], register_save_location[i]);
+			}
+			return register_name[i];
+		}
+	}
+}
+
+void free_register(char *reg_to_free)
+{
+	int i = 0;
+	for(;i<7;i++) {
+		if(compare_string(reg_to_free, register_name[i]) == 0) {
+			register_used[i] = false;
+			break;
+		}
+	}
 }
 
 void init_local_store(VAR_STORE *store)
@@ -169,14 +217,6 @@ void create_local_var(VAR_STORE *store, char* name)
 	sprintf(pair->location, "-%d(%%rbp)", stack_used);
 }
 
-char* get_stack_space(int amount)
-{
-	if(amount<=0) return NULL;
-	stack_used += 4;
-	char *c = malloc(sizeof(char)*20);
-	sprintf(c, "-%d(%%rbp)", stack_used);
-}
-
 void free_location(VAR_STORE *store, char *location)
 {
 	VAR_PAIR *pair = get_var_pair_for_location(store, location);
@@ -191,6 +231,13 @@ void free_location(VAR_STORE *store, char *location)
 
 void empty_stack_of_local_vars()
 {
+	int i=2;
+	for(;i<7;i++) {
+		register_used[i] = false;
+		move_values(register_save_location[i], register_name[i]);
+		register_save_location[i] = NULL;
+	}
+
 	if(stack_used > 0) {
 		printf("    addq    $%d, %%rsp\n", stack_used);
 		stack_used = 0;
