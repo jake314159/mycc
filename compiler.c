@@ -146,6 +146,13 @@ char* to_value(ptree *tree)
 			sprintf(c, "%%r10d");
 			return c;
 			break;
+		case NODE_MULT:
+			move_values(to_value(tree->body.a_parent.left), "%r10d");
+			printf("    imull    %s, %%r10d\n", to_value(tree->body.a_parent.right));
+			c = malloc(sizeof(char)*20);
+			sprintf(c, "%%r10d");
+			return c;
+			break;
 		case NODE_U_MINUS:
 			c = to_value(tree->body.a_parent.left);
 			printf("    movl    %s, %%r10d\n", c);

@@ -31,7 +31,7 @@ extern int line_number;
 %token <tval> PTREE
 %token <tval> STRING_CONST
 
-%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase varAss
+%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase varAss valMult
 
 %%
 // this is the actual grammar that yacc will parse, but for right now it's just
@@ -80,9 +80,14 @@ argListNotZero:
 	| val						{ $$= $1; }
 ;
 val:
-	  val '+' valBase  { $$= make_node_add($1, $3); }
-	| val '-' valBase  { $$= make_node_sub($1, $3); }
-	| valBase		{ $$= $1; }
+	  val '+' valMult  { $$= make_node_add($1, $3); }
+	| val '-' valMult  { $$= make_node_sub($1, $3); }
+	| valMult		{ $$= $1; }
+;
+
+valMult:
+	  valMult '*' valBase  { $$= make_node_mult($1, $3); }
+	| valBase		   { $$= $1; }
 ;
 
 valBase:

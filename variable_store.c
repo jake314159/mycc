@@ -27,18 +27,7 @@ char *register_save_location[7] = {NULL,    NULL,    NULL,   NULL,    NULL,    N
 
 int compare_string(char* string1, char* string2)
 {
-    int i = 0;
-    while(string1[i] != '\0' && string2[i] != '\0') {
-        if(string1[i] != string2[i]) {
-            if(string1[i] < string2[i]) {
-                return 1;
-            } else {
-                return -1;
-            }
-        }
-        i++;
-    }
-    return 0; //0 for equal
+	return strcmp(string1, string2);
 }
 
 char* get_stack_space(int amount) //TODO amount not used
@@ -208,11 +197,10 @@ void create_local_var(VAR_STORE *store, char* name)
 	if(store == NULL) return;
 	char *temp = malloc(sizeof(char) * (strlen(name) + 1));
 	strcpy(temp, name);
-	name = temp;
 
 	VAR_PAIR *pair = get_last_pair(store);
 
-	pair->name = name;
+	pair->name = temp;
 	pair->location = malloc(sizeof(char) * 20);
 
 	stack_used += 4;

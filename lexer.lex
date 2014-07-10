@@ -17,14 +17,14 @@ return {return RETURN;}
 	yylval.tval = make_node_string_const(res);
 	return STRING_CONST;
 }
-[a-zA-Z0-9_*-]+ {
+\*?[a-zA-Z0-9_-]+\*? {
 	// we have to copy because we can't rely on yytext not changing underneath us:
 	char *res = malloc(sizeof(char) * (strlen(yytext) + 1));
 	strcpy(res, yytext);
 	yylval.tval = make_node_string(res);
 	return STRING;
 }
-[\(\)\{\},;=+-]    { return yytext[0]; }
+[\(\)\{\},;=*+-]    { return yytext[0]; }
 \n {line_number++;}
 . ;
 %%
