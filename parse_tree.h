@@ -9,6 +9,7 @@ enum tree_type {
 	NODE_ADD, NODE_SUB, NODE_U_MINUS, NODE_MULT,
 	NODE_FUNCTION_CALL, NODE_FUNCTION_ARG_CHAIN,
 	NODE_IF,
+	NODE_COMP_GT, NODE_COMP_LT, NODE_COMP_EQ,
 	NODE_RETURN
 };
 
@@ -43,6 +44,7 @@ ptree* make_node_unary_minus(ptree *value);
 ptree* make_node_global_var_def(ptree *varType, ptree *name, ptree *default_value);
 ptree* make_node_string_const(char *type);
 ptree* make_node_if(ptree* value, ptree* true_body, ptree* false_body);
+ptree* make_node_comp(enum tree_type type, ptree *left, ptree *right);
 
 ptree* make_var_def(ptree *varType, ptree *name);
 

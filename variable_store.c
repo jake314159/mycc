@@ -33,6 +33,7 @@ int compare_string(char* string1, char* string2)
 char* get_stack_space(int amount) //TODO amount not used
 {
 	if(amount<=0) return NULL;
+	printf("    subq    $4, %rsp\n");
 	stack_used += 4;
 	char *c = malloc(sizeof(char)*20);
 	sprintf(c, "-%d(%%rbp)", stack_used);

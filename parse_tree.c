@@ -121,6 +121,21 @@ void printTree(ptree *root, int depth)
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_COMP_GT:
+			printf("[>]\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_COMP_LT:
+			printf("[<]\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_COMP_EQ:
+			printf("[==]\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		default:
 			printf("Unknown %d\n", root->type);
 			break;
@@ -352,4 +367,12 @@ ptree* make_node_if(ptree* value, ptree* true_body, ptree* false_body)
 	return node;
 }
 
+ptree* make_node_comp(enum tree_type type, ptree *left, ptree *right)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = type;
+	node->body.a_parent.left = left;
+	node->body.a_parent.right = right;
+	return node;
+}
 

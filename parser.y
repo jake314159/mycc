@@ -33,7 +33,7 @@ extern int line_number;
 %token <tval> IF_TOKEN
 %token <tval> ELSE_TOKEN
 
-%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase varAss valMult ifStmt elifStmt
+%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase varAss valMult ifStmt elifStmt valAdd
 
 %%
 // this is the actual grammar that yacc will parse, but for right now it's just
@@ -91,8 +91,14 @@ argListNotZero:
 	| val						{ $$= $1; }
 ;
 val:
-	  val '+' valMult  { $$= make_node_add($1, $3); }
-	| val '-' valMult  { $$= make_node_sub($1, $3); }
+	  valAdd '>' valAdd		{ $$= make_node_comp(NODE_COMP_GT, $1, $3); }
+	| valAdd '<' valAdd		{ $$= make_node_comp(NODE_COMP_LT, $1, $3); }
+	| valAdd '=' '=' valAdd	{ $$= make_node_comp(NODE_COMP_EQ, $1, $4); }
+	| valAdd				{ $$= $1; }
+;
+valAdd:
+	  valAdd '+' valMult  { $$= make_node_add($1, $3); }
+	| valAdd '-' valMult  { $$= make_node_sub($1, $3); }
 	| valMult		{ $$= $1; }
 ;
 

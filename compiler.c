@@ -87,10 +87,42 @@ void move_values(char *from, char *too)
 	}
 }
 
+void comp(char *loc1, char *loc2)
+{
+	/*
+		0 == constant (eg. $10)
+		1 == register (eg. %esi)
+		2 == stack    (eg. -10(%rbp) )
+		3 == label    (eg. .L0 )
+	*/
+	int l1_type, l2_type;
+	if(loc1[0] == '$')      l1_type = 0;
+	else if(loc1[0] == '%') l1_type = 1;
+	else if(loc1[0] == '.') l1_type = 3;
+	else					l1_type = 2;
+
+	if(loc2[0] == '$')      l2_type = 0;
+	else if(loc2[0] == '%') l2_type = 1;
+	else if(loc2[0] == '.') l2_type = 3;
+	else					l2_type = 2;
+
+	if(l1_type == 0 && l2_type == 0) {
+		//This will fail and needs to be hard coded (as they are both constants)
+	}
+	
+	if( (l2_type == 1 && l1_type != 1) || (l2_type == 0 && l1_type != 0) ) {
+		char *temp = loc1;
+		loc1 = loc2;
+		loc2 = temp;
+	}
+	
+	printf("    cmpl    %s, %s\n", loc1, loc2);
+}
+
 char* to_value(ptree *tree)
 {
 	int i1, i2;
-	char *c;
+	char *c, *c2;
 	switch(tree->type) {
 		case NODE_INT:
 			c = malloc(sizeof(char)*15);
@@ -159,6 +191,36 @@ char* to_value(ptree *tree)
 			printf("    movl    %s, %%r10d\n", c);
 			printf("    negl    %%r10d\n");
 			printf("    movl    %%r10d, %s\n", c);
+			return c;
+			break;
+		case NODE_COMP_GT:
+			c = get_stack_space(4);
+			label_number += 1;
+			printf("    movl    $1, %s\n", c);
+			comp(to_value(tree->body.a_parent.left), to_value(tree->body.a_parent.right));
+			printf("    jg      .L%d\n", label_number-1);
+			printf("    movl    $0, %s\n", c);
+			printf(".L%d:\n", label_number-1);
+			return c;
+			break;
+		case NODE_COMP_LT:
+			c = get_stack_space(4);
+			label_number += 1;
+			printf("    movl    $1, %s\n", c);
+			comp(to_value(tree->body.a_parent.left), to_value(tree->body.a_parent.right));
+			printf("    jl      .L%d\n", label_number-1);
+			printf("    movl    $0, %s\n", c);
+			printf(".L%d:\n", label_number-1);
+			return c;
+			break;
+		case NODE_COMP_EQ:
+			c = get_stack_space(4);
+			label_number += 1;
+			printf("    movl    $1, %s\n", c);
+			comp(to_value(tree->body.a_parent.left), to_value(tree->body.a_parent.right));
+			printf("    je      .L%d\n", label_number-1);
+			printf("    movl    $0, %s\n", c);
+			printf(".L%d:\n", label_number-1);
 			return c;
 			break;
 		case NODE_STRING_CONST:

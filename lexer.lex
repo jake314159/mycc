@@ -25,7 +25,7 @@ int line_number = 0;
 	yylval.tval = make_node_string(res);
 	return STRING;
 }
-[\(\)\{\},;=*+-]    { return yytext[0]; }
+[\(\)\{\},;=*+<>-]    { return yytext[0]; }
 \n {line_number++;}
 [ \t] ;
 \/\/.*\n ;
