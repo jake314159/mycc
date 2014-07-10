@@ -14,3 +14,5 @@ void create_local_var(VAR_STORE *store, char* name);
 char* get_stack_space(int amount);
 char* get_free_register();
 void free_register(char *reg_to_free);
+void free_location(VAR_STORE *store, char *location);
+void empty_stack_of_local_vars();

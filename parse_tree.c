@@ -163,11 +163,13 @@ ptree* make_node_paramiter_def(ptree *other_params, ptree *type, ptree *name)
 		tree->type = NODE_PARAMITER_DEF;
 		tree->body.a_parent.left = type;
 		tree->body.a_parent.right = name;
+		return tree;
 	} else {
 		ptree *tree = malloc(sizeof(ptree));
 		tree->type = NODE_PARAMITER_CHAIN;
 		tree->body.a_parent.right = make_node_paramiter_def(NULL, type, name);
 		tree->body.a_parent.left = other_params;
+		return tree;
 	}
 }
 
@@ -210,6 +212,7 @@ ptree* make_return_node(ptree *returnValue)
 	tree->type = NODE_RETURN;
 	tree->body.a_parent.left = returnValue;
 	tree->body.a_parent.right = NULL;
+	return tree;
 }
 
 ptree* make_function_call(ptree *fun_name, ptree *args)
@@ -227,6 +230,7 @@ ptree* make_function_args(ptree *moreArgs, ptree *argValue)
 	tree->type = NODE_FUNCTION_ARG_CHAIN;
 	tree->body.a_parent.left = moreArgs;
 	tree->body.a_parent.right = argValue;
+	return tree;
 }
 
 void free_tree(ptree *root)

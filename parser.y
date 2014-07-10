@@ -106,7 +106,7 @@ extern int yylex();
 extern int yyparse();
 extern FILE *yyin;
 
-main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
 	/*// open a file handle to a particular file:
 	FILE *myfile = fopen("a.snazzle.file", "r");
 	// make sure it is valid:
@@ -118,7 +118,7 @@ main(int argc, char **argv) {
 	yyin = myfile;*/
 	
 	// parse through the input until there is no more:
-	ptree *t;
+	//ptree *t;
 	do {
 		yyparse();
 	} while (!feof(yyin));
@@ -130,6 +130,8 @@ main(int argc, char **argv) {
 	compile_tree(getTreeRoot());
 
 	free_tree(getTreeRoot());
+
+	return 0;
 }
 
 void yyerror(char *s) {

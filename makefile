@@ -1,5 +1,5 @@
 
-CC_FLAGS =
+CC_FLAGS = -Wall -ggdb
 
 main: mycc
 

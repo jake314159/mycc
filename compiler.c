@@ -4,7 +4,7 @@
 #include "compiler.h"
 #include "variable_store.h"
 
-const char *function_arg_locations[6]  = {"%edi", "%esi", "%edx", "%ecx", "%e8", "%e9"};
+char *function_arg_locations[6]  = {"%edi", "%esi", "%edx", "%ecx", "%e8", "%e9"};
 
 int prep_function_args(ptree *tree, int argNumber);
 char* to_value(ptree *tree);
@@ -88,8 +88,8 @@ void move_values(char *from, char *too)
 
 char* to_value(ptree *tree)
 {
-	int length, i1, i2;
-	char *c, *c2;
+	int i1, i2;
+	char *c;
 	switch(tree->type) {
 		case NODE_INT:
 			c = malloc(sizeof(char)*15);
@@ -130,6 +130,7 @@ char* to_value(ptree *tree)
 			return c;
 		case NODE_VAR:
 			c = get_local_var_location(local_vars, tree->body.a_string);
+			return c;
 			break;
 		case NODE_ADD:
 			move_values(to_value(tree->body.a_parent.left), "%r10d");
@@ -177,7 +178,7 @@ int prep_function_args(ptree *tree, int argNumber)
 	if(argNumber == 0 && tree->type != NODE_FUNCTION_ARG_CHAIN) {
 		printf("    movl   %s, %s\n", to_value(tree), get_paramiter_location(0));
 		functions_args_prep++;
-		return;
+		return argNumber;
 	}
 
 	if(tree->body.a_parent.left->type == NODE_FUNCTION_ARG_CHAIN) {
@@ -201,7 +202,7 @@ void compile_tree_aux(ptree *tree)
 {
 	if(tree == NULL) printf("# NULL");
 
-	char *c1,*c2;
+	char *c1;
 	ptree *n1;
 
 	switch(tree->type) {

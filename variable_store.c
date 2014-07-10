@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include "compiler.h"
 #include "variable_store.h"
 
 typedef struct VAR_PAIR{
@@ -40,12 +41,13 @@ int compare_string(char* string1, char* string2)
     return 0; //0 for equal
 }
 
-char* get_stack_space(int amount)
+char* get_stack_space(int amount) //TODO amount not used
 {
 	if(amount<=0) return NULL;
 	stack_used += 4;
 	char *c = malloc(sizeof(char)*20);
 	sprintf(c, "-%d(%%rbp)", stack_used);
+	return c;
 }
 
 char* get_free_register()
@@ -70,6 +72,7 @@ char* get_free_register()
 			return register_name[i];
 		}
 	}
+	return NULL; // no free registers
 }
 
 void free_register(char *reg_to_free)
