@@ -8,13 +8,14 @@ enum tree_type {
 	NODE_MAIN_EXTENDED, NODE_VAR, NODE_VAR_ASSIGN, NODE_VAR_DEF, NODE_VAR_GLOBAL_DEF,
 	NODE_ADD, NODE_SUB, NODE_U_MINUS, NODE_MULT,
 	NODE_FUNCTION_CALL, NODE_FUNCTION_ARG_CHAIN,
+	NODE_IF,
 	NODE_RETURN
 };
 
 typedef struct ptree {
    enum tree_type type;
    union {
-     struct {struct ptree *left, *right;} a_parent;
+     struct {struct ptree *left, *right, *extra;} a_parent;
      int a_int;
      float a_float;
      char *a_string;
@@ -41,6 +42,7 @@ ptree* make_node_mult(ptree *left, ptree *right);
 ptree* make_node_unary_minus(ptree *value);
 ptree* make_node_global_var_def(ptree *varType, ptree *name, ptree *default_value);
 ptree* make_node_string_const(char *type);
+ptree* make_node_if(ptree* value, ptree* true_body, ptree* false_body);
 
 ptree* make_var_def(ptree *varType, ptree *name);
 

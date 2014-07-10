@@ -75,6 +75,7 @@ void printTree(ptree *root, int depth)
 			printf("Function call\n");
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
+			break;
 		case NODE_FUNCTION_ARG_CHAIN:
 			printf("Arg chain\n");
 			printTree(root->body.a_parent.left, depth+1);
@@ -113,6 +114,12 @@ void printTree(ptree *root, int depth)
 		case NODE_U_MINUS:
 			printf("[U-]\n");
 			printTree(root->body.a_parent.left, depth+1);
+			break;
+		case NODE_IF:
+			printf("If\n");
+			printTree(root->body.a_parent.extra, depth+1);
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
 			break;
 		default:
 			printf("Unknown %d\n", root->type);
@@ -334,4 +341,15 @@ ptree* make_node_global_var_def(ptree *varType, ptree *name, ptree *default_valu
 	node->body.a_parent.right = default_value;
 	return node;
 }
+
+ptree* make_node_if(ptree* value, ptree* true_body, ptree* false_body)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_IF;
+	node->body.a_parent.extra = value;
+	node->body.a_parent.left = true_body;
+	node->body.a_parent.right = false_body;
+	return node;
+}
+
 

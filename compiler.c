@@ -16,6 +16,7 @@ int functions_args_prep = 0; //Number of args we have prepared ready for a funct
 
 int params_set = 0;
 int string_const_number = 0;
+int label_number = 0;
 
 void create_head(ptree *tree)
 {
@@ -211,6 +212,7 @@ void compile_tree_aux(ptree *tree)
 
 	char *c1;
 	ptree *n1;
+	int i1;
 
 	switch(tree->type) {
 		case NODE_FUNCTION_DEF:
@@ -275,6 +277,22 @@ void compile_tree_aux(ptree *tree)
 			"%s:\n"\
 			"    .long	%d\n"\
 			"    .text\n\n", c1,c1,c1,c1, n1==NULL?0:n1->body.a_int);
+			break;
+		case NODE_IF:
+			if(tree->body.a_parent.extra == 0) {
+				compile_tree_aux(tree->body.a_parent.left);
+			} else {
+				i1 = label_number;
+				label_number += 2;
+				c1 = to_value(tree->body.a_parent.extra);
+				printf("    cmpl    $0, %s\n", c1);
+				printf("    je      .L%d\n", i1);
+				compile_tree_aux(tree->body.a_parent.left);
+				printf("    jmp     .L%d\n", i1+1);
+				printf(".L%d:\n", i1);
+				compile_tree_aux(tree->body.a_parent.right);
+				printf(".L%d:\n", i1+1);
+			}
 			break;
 	//	case NODE_FUNCTION_ARG_CHAIN:
 	//		prep_function_args(tree, 1);

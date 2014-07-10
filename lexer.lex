@@ -5,9 +5,10 @@
 int line_number = 0;
 %}
 %%
-[ \t] ;
-\/\/.*\n ;
-return {return RETURN;}
+
+"if" {return IF_TOKEN;}
+"else" {return ELSE_TOKEN;}
+"return" {return RETURN;}
 [0-9]+\.[0-9]+ { yylval.tval = make_node_float(atof(yytext)); return FLOAT; }
 [0-9]+  { yylval.tval = make_node_int(atoi(yytext)); return INT; }
 \"[^\"]*\" {
@@ -26,5 +27,7 @@ return {return RETURN;}
 }
 [\(\)\{\},;=*+-]    { return yytext[0]; }
 \n {line_number++;}
+[ \t] ;
+\/\/.*\n ;
 . ;
 %%

@@ -9,7 +9,7 @@ extern int line_number;
 
 // define the "terminal symbol" token types I'm going to use, which
 // are in CAPS only because it's a convention:
-%token INT FLOAT STRING PTREE RETURN STRING_CONST
+%token INT FLOAT STRING PTREE RETURN STRING_CONST IF_TOKEN ELSE_TOKEN
 
 // yacc fundamentally works by asking lex to get the next token, which it returns as
 // an object of type "yystype".  But
@@ -30,8 +30,10 @@ extern int line_number;
 %token <tval> STRING
 %token <tval> PTREE
 %token <tval> STRING_CONST
+%token <tval> IF_TOKEN
+%token <tval> ELSE_TOKEN
 
-%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase varAss valMult
+%type<tval> functionBody start paramiters mainLine paramitersNotZero expr val argList argListNotZero valBase varAss valMult ifStmt elifStmt
 
 %%
 // this is the actual grammar that yacc will parse, but for right now it's just
@@ -61,9 +63,18 @@ functionBody:
 ;
 expr:
 	  RETURN val ';' { $$= make_return_node($2); }
+	| ifStmt  { $$= $1; }
 	| varAss ';'	{ $$= $1; }
-	| STRING '(' argList ')' ';'{ $$= make_function_call($1, $3); } // This is also in val
+	| STRING '(' argList ')' ';' { $$= make_function_call($1, $3); } // This is also in val
 //	| val ';'		{ $$= $1; } //This overrides varAss
+;
+ifStmt:
+	  IF_TOKEN '(' val ')' '{' functionBody '}' elifStmt { $$= make_node_if($3, $6, $8); }
+;
+elifStmt:
+	  ELSE_TOKEN IF_TOKEN '(' val ')' '{' functionBody '}' elifStmt { $$= make_node_if($4, $7, $9); }
+	| ELSE_TOKEN '{' functionBody '}' 						{ $$= make_node_if(NULL, $3, NULL); }
+	|  													{ $$= NULL; }
 ;
 varAss:
 	  STRING STRING '=' val { $$= make_main_extended(make_var_def($1, $2), make_var_assign($2, $4)); }
