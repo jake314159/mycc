@@ -89,6 +89,8 @@ void move_values(char *from, char *too)
 
 void comp(char *loc1, char *loc2)
 {
+	char *reg = NULL;
+
 	/*
 		0 == constant (eg. $10)
 		1 == register (eg. %esi)
@@ -108,6 +110,11 @@ void comp(char *loc1, char *loc2)
 
 	if(l1_type == 0 && l2_type == 0) {
 		//This will fail and needs to be hard coded (as they are both constants)
+	} else if(l1_type == 2 && l2_type == 2) {
+		// Both in memory so we need to move one to a register
+		reg = get_free_register();
+		move_values(loc1, reg);
+		loc1 = reg;
 	}
 	
 	if( (l2_type == 1 && l1_type != 1) || (l2_type == 0 && l1_type != 0) ) {
@@ -117,6 +124,10 @@ void comp(char *loc1, char *loc2)
 	}
 	
 	printf("    cmpl    %s, %s\n", loc1, loc2);
+
+	if(reg != NULL) {
+		free_register(reg);
+	}
 }
 
 char* to_value(ptree *tree)
@@ -219,6 +230,36 @@ char* to_value(ptree *tree)
 			printf("    movl    $1, %s\n", c);
 			comp(to_value(tree->body.a_parent.left), to_value(tree->body.a_parent.right));
 			printf("    je      .L%d\n", label_number-1);
+			printf("    movl    $0, %s\n", c);
+			printf(".L%d:\n", label_number-1);
+			return c;
+			break;
+		case NODE_COMP_NEQ:
+			c = get_stack_space(4);
+			label_number += 1;
+			printf("    movl    $1, %s\n", c);
+			comp(to_value(tree->body.a_parent.left), to_value(tree->body.a_parent.right));
+			printf("    jne     .L%d\n", label_number-1);
+			printf("    movl    $0, %s\n", c);
+			printf(".L%d:\n", label_number-1);
+			return c;
+			break;
+		case NODE_COMP_GTEQ:
+			c = get_stack_space(4);
+			label_number += 1;
+			printf("    movl    $1, %s\n", c);
+			comp(to_value(tree->body.a_parent.left), to_value(tree->body.a_parent.right));
+			printf("    jge     .L%d\n", label_number-1);
+			printf("    movl    $0, %s\n", c);
+			printf(".L%d:\n", label_number-1);
+			return c;
+			break;
+		case NODE_COMP_LTEQ:
+			c = get_stack_space(4);
+			label_number += 1;
+			printf("    movl    $1, %s\n", c);
+			comp(to_value(tree->body.a_parent.left), to_value(tree->body.a_parent.right));
+			printf("    jle     .L%d\n", label_number-1);
 			printf("    movl    $0, %s\n", c);
 			printf(".L%d:\n", label_number-1);
 			return c;

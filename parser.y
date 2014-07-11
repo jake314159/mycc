@@ -94,6 +94,9 @@ val:
 	  valAdd '>' valAdd		{ $$= make_node_comp(NODE_COMP_GT, $1, $3); }
 	| valAdd '<' valAdd		{ $$= make_node_comp(NODE_COMP_LT, $1, $3); }
 	| valAdd '=' '=' valAdd	{ $$= make_node_comp(NODE_COMP_EQ, $1, $4); }
+	| valAdd '!' '=' valAdd	{ $$= make_node_comp(NODE_COMP_NEQ, $1, $4); }
+	| valAdd '>' '=' valAdd	{ $$= make_node_comp(NODE_COMP_GTEQ, $1, $4); }
+	| valAdd '<' '=' valAdd	{ $$= make_node_comp(NODE_COMP_LTEQ, $1, $4); }
 	| valAdd				{ $$= $1; }
 ;
 valAdd:
