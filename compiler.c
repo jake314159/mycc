@@ -18,6 +18,8 @@ int params_set = 0;
 int string_const_number = 0;
 int label_number = 0;
 
+int function_return_size;
+
 void create_head(ptree *tree)
 {
 	if(tree == NULL) return;
@@ -50,7 +52,7 @@ void create_head(ptree *tree)
 	}
 }
 
-void move_values(char *from, char *too)
+void move_values(char *from, char *too, int size)
 {
 	bool from_pointer = false, too_pointer = false, same = true;
 	int i = 0;
@@ -77,13 +79,20 @@ void move_values(char *from, char *too)
 		i++;
 	}
 
+	char *move_cmd;
+	//int regSize = getRegisterSize(too);
+	if(size == 8) {
+		move_cmd = "movq";
+	} else {
+		move_cmd = "movl";
+	}
 	if(from_pointer && too_pointer) {
-		char *c = get_free_register();
-		printf("    movl    %s, %s\n", from, c);
-		printf("    movl    %s, %s\n", c, too);
+		char *c = get_free_register(size);
+		printf("    %s    %s, %s\n", move_cmd, from, c);
+		printf("    %s    %s, %s\n", move_cmd, c, too);
 		free_register(c);
 	} else if (!same) {
-		printf("    movl    %s, %s\n", from, too);
+		printf("    %s    %s, %s\n", move_cmd, from, too);
 	}
 }
 
@@ -112,8 +121,8 @@ void comp(char *loc1, char *loc2)
 		//This will fail and needs to be hard coded (as they are both constants)
 	} else if(l1_type == 2 && l2_type == 2) {
 		// Both in memory so we need to move one to a register
-		reg = get_free_register();
-		move_values(loc1, reg);
+		reg = get_free_register(4);
+		move_values(loc1, reg, 4);
 		loc1 = reg;
 	}
 	
@@ -176,22 +185,37 @@ char* to_value(ptree *tree)
 			c = get_local_var_location(local_vars, tree->body.a_string);
 			return c;
 			break;
+		case NODE_VAR_POINTER:
+			c = get_local_var_location(local_vars, tree->body.a_string);
+			printf("    movq    %s, %%rax\n", c);
+			printf("    movl    (%%rax), %%eax\n");
+			c2 = get_stack_space(4);
+			printf("    movl    %%eax, %s\n", c2);
+			return c2;
+			break;
+		case NODE_VAR_TO_POINTER:
+			c = get_local_var_location(local_vars, tree->body.a_string);
+			printf("    leaq    %s, %%rax\n", c);
+			c2 = get_stack_space(8);
+			printf("    movq    %%rax, %s\n", c2);
+			return c2;
+			break;
 		case NODE_ADD:
-			move_values(to_value(tree->body.a_parent.left), "%r10d");
+			move_values(to_value(tree->body.a_parent.left), "%r10d", 4);
 			printf("    addl    %s, %%r10d\n", to_value(tree->body.a_parent.right));
 			c = malloc(sizeof(char)*20);
 			sprintf(c, "%%r10d");
 			return c;
 			break;
 		case NODE_SUB:
-			move_values(to_value(tree->body.a_parent.left), "%r10d");
+			move_values(to_value(tree->body.a_parent.left), "%r10d", 4);
 			printf("    subl    %s, %%r10d\n", to_value(tree->body.a_parent.right));
 			c = malloc(sizeof(char)*20);
 			sprintf(c, "%%r10d");
 			return c;
 			break;
 		case NODE_MULT:
-			move_values(to_value(tree->body.a_parent.left), "%r10d");
+			move_values(to_value(tree->body.a_parent.left), "%r10d", 4);
 			printf("    imull    %s, %%r10d\n", to_value(tree->body.a_parent.right));
 			c = malloc(sizeof(char)*20);
 			sprintf(c, "%%r10d");
@@ -265,7 +289,7 @@ char* to_value(ptree *tree)
 			return c;
 			break;
 		case NODE_STRING_CONST:
-			c = malloc(sizeof(char) * 50); //TODO should be able to be shorter
+			c = malloc(sizeof(char) * 25);
 			sprintf(c, "%s", tree->body.a_string);
 			return c;
 			break;
@@ -316,12 +340,17 @@ void compile_tree_aux(ptree *tree)
 	char *c1;
 	ptree *n1;
 	int i1;
+	bool b1;
+	TYPE_DEF type;
 
 	switch(tree->type) {
 		case NODE_FUNCTION_DEF:
+			//b1 == is it going to return a pointer?
+			b1 = tree->body.a_parent.left->type == NODE_FUNCTION_TYPE_POINTER_NAME_PAIR;
+			function_return_size = b1 ? 8 : 4;
 			params_set = 0;
 			printf("%s:\n", tree->body.a_parent.left->body.a_parent.right->body.a_string);
-			printf("    pushq   %%rbp\n");        // Save the frame pointer to the stack so we can put it back later
+			printf("    pushq   %%rbp\n");         // Save the frame pointer to the stack so we can put it back later
 			printf("    movq    %%rsp,  %%rbp\n"); // Change to our own frame pointer
 
 			local_vars = malloc(sizeof(VAR_STORE));
@@ -342,7 +371,11 @@ void compile_tree_aux(ptree *tree)
 			break;
 		case NODE_RETURN:
 			c1 = to_value(tree->body.a_parent.left);
-			printf("    movl    %s,  %%eax\n", c1 );
+			if(function_return_size == 8) {
+				printf("    movq    %s, %%rax\n", c1);
+			} else {
+				printf("    movl    %s,  %%eax\n", c1 );
+			}
 			break;
 		case NODE_MAIN_EXTENDED:
 			compile_tree_aux(tree->body.a_parent.left);
@@ -356,7 +389,10 @@ void compile_tree_aux(ptree *tree)
 			functions_args_prep = 0;
 			break;
 		case NODE_PARAMITER_DEF:
-			add_local_var(local_vars, tree->body.a_parent.right->body.a_string, get_paramiter_location(params_set++));
+			type.name = tree->body.a_parent.left->body.a_string;
+			type.pointer = false;
+			type.size = 4; //TODO
+			add_local_var(local_vars, tree->body.a_parent.right->body.a_string, get_paramiter_location(params_set++), type);
 			break;
 		case NODE_PARAMITER_CHAIN:
 			compile_tree_aux(tree->body.a_parent.left);
@@ -365,8 +401,20 @@ void compile_tree_aux(ptree *tree)
 		case NODE_VAR_ASSIGN:
 			set_local_var(local_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
 			break;
+		case NODE_VAR_ASSIGN_POINTER:
+			set_local_var_pointer(local_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
+			break;
 		case NODE_VAR_DEF:
-			create_local_var(local_vars, tree->body.a_parent.right->body.a_string);
+			type.name = tree->body.a_parent.left->body.a_string;
+			type.pointer = false;
+			type.size = 4; //TODO
+			create_local_var(local_vars, tree->body.a_parent.right->body.a_string, type); //TODO use type to find size
+			break;
+		case NODE_VAR_DEF_POINTER:
+			type.name = tree->body.a_parent.left->body.a_string;
+			type.pointer = true;
+			type.size = 8; //TODO
+			create_local_var(local_vars, tree->body.a_parent.right->body.a_string, type); //TODO use type to find size
 			break;
 		case NODE_VAR_GLOBAL_DEF:
 			c1 = tree->body.a_parent.left->body.a_parent.right->body.a_string; //var name

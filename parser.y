@@ -45,9 +45,12 @@ start:
 ;
 
 mainLine:
-	  STRING STRING '(' paramiters ')' '{' functionBody '}' { $$= make_node_function_def($1, $2, $4, $7); }
-	| STRING STRING ';'										{ $$= make_node_global_var_def($1, $2, NULL); }
-	| STRING STRING '=' val ';'								{ $$= make_node_global_var_def($1, $2, $4); }
+	  STRING STRING '(' paramiters ')' '{' functionBody '}' 	{ $$= make_node_function_def($1, false, $2, $4, $7); }
+	| STRING '*' STRING '(' paramiters ')' '{' functionBody '}' { $$= make_node_function_def($1, true,  $3, $5, $8); }
+	| STRING STRING ';'											{ $$= make_node_global_var_def($1, $2, NULL); }
+	| STRING STRING '=' val ';'									{ $$= make_node_global_var_def($1, $2, $4); }
+	| STRING '*' STRING ';'										{ $$= make_node_global_var_def_pointer($1, $3, NULL); }
+	| STRING '*' STRING '=' val ';'								{ $$= make_node_global_var_def_pointer($1, $3, $5); }
 ;
 paramiters:
 	  paramitersNotZero { $$= $1; }
@@ -57,6 +60,7 @@ paramitersNotZero:
 	  paramitersNotZero ',' STRING STRING { $$= make_node_paramiter_def($1, $3, $4); }
 	| STRING STRING { $$=make_node_paramiter_def(NULL, $1, $2); }
 ;
+
 functionBody:
 	  functionBody expr { $$= make_main_extended($1, $2); }
 	| expr { $$= $1; }
@@ -78,8 +82,11 @@ elifStmt:
 ;
 varAss:
 	  STRING STRING '=' val { $$= make_main_extended(make_var_def($1, $2), make_var_assign($2, $4)); }
+	| STRING '*' STRING '=' val { $$= make_main_extended(make_var_def_pointer($1, $3), make_var_assign($3, $5)); }
 	| STRING '=' val { $$= make_var_assign($1, $3); }
+	| '*' STRING '=' val { $$= make_var_assign_pointer($2, $4); }
 	| STRING STRING { $$= make_var_def($1, $2); }
+	| STRING '*' STRING { $$= make_var_def_pointer($1, $3); }
 ;
 argList:
 	  argListNotZero { $$= $1; }
@@ -118,6 +125,8 @@ valBase:
 	| INT { $$= $1; }
 	| FLOAT { $$= $1; }
 	| STRING { $$= make_node_var($1); }
+	| '*' STRING { $$= make_node_var_pointer($2); }
+	| '&' STRING { $$= make_node_var_to_pointer($2); }
 	| STRING '(' argList ')'	{ $$= make_function_call($1, $3); }
 	| '(' val ')'			{ $$=$2; }
 	| STRING_CONST	{ $$= $1; }

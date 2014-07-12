@@ -34,6 +34,12 @@ void printTree(ptree *root, int depth)
 		case NODE_VAR:
 			printf("Variable '%s'\n", root->body.a_string);
 			break;
+		case NODE_VAR_POINTER:
+			printf("Variable pointer '%s'\n", root->body.a_string);
+			break;
+		case NODE_VAR_TO_POINTER:
+			printf("Variable to pointer'%s'\n", root->body.a_string);
+			break;
 		case NODE_FLOAT:
 			printf("Float %f\n", root->body.a_float);
 			break;
@@ -49,6 +55,11 @@ void printTree(ptree *root, int depth)
 			break;
 		case NODE_FUNCTION_TYPE_NAME_PAIR:
 			printf("Function type-name pair\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_FUNCTION_TYPE_POINTER_NAME_PAIR:
+			printf("Function type*-name pair\n");
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
@@ -86,13 +97,28 @@ void printTree(ptree *root, int depth)
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_VAR_ASSIGN_POINTER:
+			printf("Variable assignment pointer\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		case NODE_VAR_DEF:
 			printf("Variable define\n");
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_VAR_DEF_POINTER:
+			printf("Variable define pointer\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		case NODE_VAR_GLOBAL_DEF:
 			printf("Global var\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
+		case NODE_VAR_GLOBAL_DEF_POINTER:
+			printf("Global var pointer\n");
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
@@ -215,7 +241,7 @@ ptree* make_node_paramiter_def(ptree *other_params, ptree *type, ptree *name)
 	}
 }
 
-ptree* make_node_function_def(ptree *type, ptree *name, ptree *params, ptree *body)
+ptree* make_node_function_def(ptree *type, bool pointer, ptree *name, ptree *params, ptree *body)
 {
 	ptree *def = malloc(sizeof(ptree));
 	ptree *name_pair = malloc(sizeof(ptree));
@@ -225,7 +251,7 @@ ptree* make_node_function_def(ptree *type, ptree *name, ptree *params, ptree *bo
 	def->body.a_parent.left = name_pair;
 	def->body.a_parent.right = param_pair;
 
-	name_pair->type = NODE_FUNCTION_TYPE_NAME_PAIR;
+	name_pair->type = pointer ? NODE_FUNCTION_TYPE_POINTER_NAME_PAIR : NODE_FUNCTION_TYPE_NAME_PAIR;
 	name_pair->body.a_parent.left = type;
 	name_pair->body.a_parent.right = name;
 
@@ -313,10 +339,40 @@ ptree* make_var_assign(ptree *varName, ptree *value)
 	return node;
 }
 
+ptree* make_var_assign_pointer(ptree *varName, ptree *value)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_VAR_ASSIGN_POINTER;
+	node->body.a_parent.left = varName;
+	node->body.a_parent.right = value;
+	return node;
+}
+
 ptree* make_var_def(ptree *varType, ptree *name)
 {
 	ptree *node = malloc(sizeof(ptree));
 	node->type = NODE_VAR_DEF;
+	node->body.a_parent.left = varType;
+	node->body.a_parent.right = name;
+	return node;
+}
+
+ptree* make_node_var_pointer(ptree *string_node)
+{
+	string_node->type = NODE_VAR_POINTER;
+	return string_node;
+}
+
+ptree* make_node_var_to_pointer(ptree *string_node)
+{
+	string_node->type = NODE_VAR_TO_POINTER;
+	return string_node;
+}
+
+ptree* make_var_def_pointer(ptree *varType, ptree *name)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_VAR_DEF_POINTER;
 	node->body.a_parent.left = varType;
 	node->body.a_parent.right = name;
 	return node;
@@ -361,7 +417,21 @@ ptree* make_node_unary_minus(ptree *value)
 ptree* make_node_global_var_def(ptree *varType, ptree *name, ptree *default_value)
 {
 	ptree *def_pair = malloc(sizeof(ptree));
-	def_pair->type = NODE_VAR_DEF;
+	def_pair->type = NODE_VAR_GLOBAL_DEF;
+	def_pair->body.a_parent.left = varType;
+	def_pair->body.a_parent.right = name;
+
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_VAR_GLOBAL_DEF;
+	node->body.a_parent.left = def_pair;
+	node->body.a_parent.right = default_value;
+	return node;
+}
+
+ptree* make_node_global_var_def_pointer(ptree *varType, ptree *name, ptree *default_value)
+{
+	ptree *def_pair = malloc(sizeof(ptree));
+	def_pair->type = NODE_VAR_GLOBAL_DEF_POINTER;
 	def_pair->body.a_parent.left = varType;
 	def_pair->body.a_parent.right = name;
 

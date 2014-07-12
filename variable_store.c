@@ -8,6 +8,7 @@
 typedef struct VAR_PAIR{
 	char *name;
 	char *location;
+	TYPE_DEF type;
 } VAR_PAIR;
 
 typedef struct STORE_LOCAL_LL{
@@ -21,7 +22,10 @@ VAR_PAIR* get_var_pair_for_location(VAR_STORE *store,  char* location);
 
 int stack_used = 0;
 
-char *register_name[7] =          {"%r10d", "%r11d", "%ebx", "%r12d", "%r13d", "%r14d", "%r15d"};
+char *register_name_8[7] =          {"%r10", "%r11", "%rbx", "%r12", "%r13", "%r14", "%r15"};
+char *register_name_4[7] =          {"%r10d", "%r11d", "%ebx", "%r12d", "%r13d", "%r14d", "%r15d"};
+char *register_name_2[7] =          {"%r10w", "%r11w", "%bx", "%r12w", "%r13w", "%r14w", "%r15w"};
+char *register_name_1[7] =          {"%r10b", "%r11b", "%bl", "%r12b", "%r13b", "%r14b", "%r15b"};
 bool register_used[7] = 		  {true,    false,   false,  false,   false,   false,   false  };
 char *register_save_location[7] = {NULL,    NULL,    NULL,   NULL,    NULL,    NULL,    NULL   };
 
@@ -30,24 +34,33 @@ int compare_string(char* string1, char* string2)
 	return strcmp(string1, string2);
 }
 
-char* get_stack_space(int amount) //TODO amount not used
+char* get_stack_space(int amount)
 {
 	if(amount<=0) return NULL;
-	printf("    subq    $4, %rsp\n");
-	stack_used += 4;
+	printf("    subq    $%d, %%rsp\n", amount);
+	stack_used += amount;
 	char *c = malloc(sizeof(char)*20);
 	sprintf(c, "-%d(%%rbp)", stack_used);
 	return c;
 }
 
-char* get_free_register()
+char* get_free_register(int size)
 {
 	int i = 0;
 	//The first 2 don't need to be saved so try to use these first
 	for(;i<2; i++) {
 		if(!register_used[i]) {
 			register_used[i] = true;
-			return register_name[i];
+			switch(size) {
+				case 8:
+					return register_name_8[i];
+				case 2:
+					return register_name_2[i];
+				case 1:
+					return register_name_1[i];
+				default:
+					return register_name_4[i];
+			}
 		}
 	}
 
@@ -57,9 +70,9 @@ char* get_free_register()
 			register_used[i] = true;
 			if(register_save_location[i] == NULL) {
 				register_save_location[i] = get_stack_space(4);
-				move_values(register_name[i], register_save_location[i]);
+				move_values(register_name_4[i], register_save_location[i], size);
 			}
-			return register_name[i];
+			return register_name_4[i]; //TODO depend on size 
 		}
 	}
 	return NULL; // no free registers
@@ -69,7 +82,7 @@ void free_register(char *reg_to_free)
 {
 	int i = 0;
 	for(;i<7;i++) {
-		if(compare_string(reg_to_free, register_name[i]) == 0) {
+		if(compare_string(reg_to_free, register_name_4[i]) == 0) {
 			register_used[i] = false;
 			break;
 		}
@@ -140,7 +153,7 @@ VAR_PAIR* get_last_pair(VAR_STORE *store)
 	return ll->next->pair;
 }
 
-void add_local_var(VAR_STORE *store, char* name, char* location)
+void add_local_var(VAR_STORE *store, char* name, char* location, TYPE_DEF type)
 {
 	if(store == NULL) return;
 	char *temp = malloc(sizeof(char) * (strlen(name) + 1));
@@ -157,6 +170,7 @@ void add_local_var(VAR_STORE *store, char* name, char* location)
 		pair = get_last_pair(store);
 		pair->name = name;
 		pair->location = location;
+		pair->type = type;
 	} else {
 		free(pair->location);
 		pair->location = location;
@@ -178,22 +192,85 @@ char* get_local_var_location(VAR_STORE *store, char *name)
 	}
 }
 
+int getRegisterSize(char *reg)
+{
+	if(reg[0] != '%') return 0; //It isn't a register!
+	int length = strlen(reg);
+
+	if(reg[2] >= '0' && reg[2] <= '9') {
+		//It's one of the %r[8-15][dwb]?
+		if(reg[length-1] == 'b') return 1;
+		else if(reg[length-1] == 'w') return 2;
+		else if(reg[length-1] == 'd') return 4;
+		else                          return 8;
+	} else if(reg[1] == 'r') {
+		return 8;
+	} else if(reg[1] == 'e') {
+		return 4;
+	} else if(reg[length-1] == 'l') {
+		return 1;
+	} else {
+		return 2;
+	}
+}
+//Not compleate!!
+char* convertReg(char *location, int targetSize)
+{
+	if(targetSize<=0 || targetSize>8) return NULL;
+	char *returnReg = malloc(sizeof(char)*(strlen(location)+1));
+	sprintf(returnReg,"%s", location);
+
+	if(returnReg[1] == 'e') {
+		switch(targetSize) {
+			case 8:
+				returnReg[1] = 'r';
+				return returnReg;
+				break;
+		}
+	}
+	return returnReg;
+}
+
 void set_local_var(VAR_STORE *store, char* name, char* location)
 {
 	if(store == NULL) return;
 
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair != NULL) {
-		move_values(location, pair->location);
+		int regLength = getRegisterSize(location);
+		if(regLength == 0 || regLength == pair->type.size) {
+			move_values(location, pair->location, pair->type.size);
+		} else {
+			//The register is the wrong size so we should try to convert it to the right size
+			char *newLocation = convertReg(location, pair->type.size);
+			move_values(location, newLocation, pair->type.size);
+		}
 	} else {
 		//it's a global variable
 		char *c = malloc(sizeof(char) *(strlen(name)+20));
 		sprintf(c, "%s(%%rip)", name);
-		move_values(location, c);
+		move_values(location, c, 4); //TODO find global var size
 	}
 }
 
-void create_local_var(VAR_STORE *store, char* name)
+void set_local_var_pointer(VAR_STORE *store, char* name, char* location)
+{
+	if(store == NULL) return;
+
+	VAR_PAIR *pair = get_var_pair(store, name);
+	if(pair != NULL) {
+		printf("    movq    %s, %%rax\n", pair->location);
+		printf("    movl    %s, (%%rax)\n", location);
+	} else {
+		//it's a global variable
+		char *c = malloc(sizeof(char) *(strlen(name)+20));
+		sprintf(c, "%s(%%rip)", name);
+		printf("    movq    %s, %%rax\n", c);
+		printf("    movl    %s, (%%rax)\n", location);
+	}
+}
+
+void create_local_var(VAR_STORE *store, char* name, TYPE_DEF type)
 {
 	if(store == NULL) return;
 	char *temp = malloc(sizeof(char) * (strlen(name) + 1));
@@ -203,9 +280,10 @@ void create_local_var(VAR_STORE *store, char* name)
 
 	pair->name = temp;
 	pair->location = malloc(sizeof(char) * 20);
+	pair->type = type;
 
-	stack_used += 4;
-	printf("    subq    $4, %%rsp\n"); //Add some space to the stack
+	stack_used += type.size;
+	printf("    subq    $%d, %%rsp\n", type.size); //Add some space to the stack
 	sprintf(pair->location, "-%d(%%rbp)", stack_used);
 }
 
@@ -227,7 +305,7 @@ void empty_stack_of_local_vars()
 	for(;i<7;i++) {
 		if(register_save_location[i] != NULL) {
 			register_used[i] = false;
-			move_values(register_save_location[i], register_name[i]);
+			move_values(register_save_location[i], register_name_4[i], 4); //TODO consider size to transfer
 			register_save_location[i] = NULL;
 		}
 	}
