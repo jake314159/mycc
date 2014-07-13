@@ -332,8 +332,6 @@ int prep_function_args(ptree *tree, int argNumber)
 	} else {
 		char *val = to_value(tree->body.a_parent.left);
 		int size = get_var_size_by_location(local_vars, val);
-		//printf("Val '%s' size %d\n", val, size);
-		//printf("    movl   %s, %s\n", val, get_paramiter_location_by_size(argNumber, size));
 		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
 		argNumber++;
 		functions_args_prep++;
@@ -343,8 +341,6 @@ int prep_function_args(ptree *tree, int argNumber)
 	} else {
 		char *val = to_value(tree->body.a_parent.right);
 		int size = get_var_size_by_location(local_vars, val);
-		//printf("Val '%s' size %d\n", val, size);
-		//printf("    movl   %s, %s\n", val , get_paramiter_location_by_size(argNumber, size));
 		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
 		argNumber++;
 		functions_args_prep++;
@@ -404,7 +400,7 @@ void compile_tree_aux(ptree *tree)
 		case NODE_FUNCTION_CALL:
 			//TODO sort out paramiters in right subtree
 			prep_function_args(tree->body.a_parent.right, 0);
-			printf("    movl    $0, %%eax\n");
+			printf("    xor     %%eax, %%eax\n");
 			printf("    call    %s\n", tree->body.a_parent.left->body.a_string);
 			functions_args_prep = 0;
 			break;
