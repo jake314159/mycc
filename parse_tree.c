@@ -73,6 +73,11 @@ void printTree(ptree *root, int depth)
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_PARAMITER_DEF_POINTER:
+			printf("Paramiter pointer def\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		case NODE_PARAMITER_CHAIN:
 			printf("Paramiter chain\n");
 			printTree(root->body.a_parent.left, depth+1);
@@ -224,18 +229,18 @@ ptree* make_node_body(ptree *line, ptree *remaining)
 	return tree;
 }
 
-ptree* make_node_paramiter_def(ptree *other_params, ptree *type, ptree *name)
+ptree* make_node_paramiter_def(ptree *other_params, ptree *type, ptree *name, bool pointer)
 {
 	if(other_params == NULL) {
 		ptree *tree = malloc(sizeof(ptree));
-		tree->type = NODE_PARAMITER_DEF;
+		tree->type = pointer ? NODE_PARAMITER_DEF_POINTER : NODE_PARAMITER_DEF;
 		tree->body.a_parent.left = type;
 		tree->body.a_parent.right = name;
 		return tree;
 	} else {
 		ptree *tree = malloc(sizeof(ptree));
 		tree->type = NODE_PARAMITER_CHAIN;
-		tree->body.a_parent.right = make_node_paramiter_def(NULL, type, name);
+		tree->body.a_parent.right = make_node_paramiter_def(NULL, type, name, pointer);
 		tree->body.a_parent.left = other_params;
 		return tree;
 	}

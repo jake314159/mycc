@@ -4,7 +4,8 @@
 #include "compiler.h"
 #include "variable_store.h"
 
-char *function_arg_locations[6]  = {"%edi", "%esi", "%edx", "%ecx", "%e8", "%e9"};
+char *function_arg_locations_8[6]  = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+char *function_arg_locations[6]  = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 
 int prep_function_args(ptree *tree, int argNumber);
 char* to_value(ptree *tree);
@@ -162,7 +163,7 @@ char* to_value(ptree *tree)
 				printf("    subl    $%d, %%esp\n", i1*8);
 				i2 = i1;
 				for(;i2>0; i2--) {
-					printf("    movl    %s, %d(%%esp)\n", get_paramiter_location(i2-1), i2*8);
+					printf("    movl    %s, %d(%%esp)\n", get_paramiter_location(i2-1), i2*8); 
 				}
 				functions_args_prep = 0;
 				prep_function_args(tree->body.a_parent.right, 0);
@@ -303,6 +304,16 @@ char* get_paramiter_location(int n)
 	return function_arg_locations[n];
 }
 
+char* get_paramiter_location_by_size(int n, int size)
+{
+	switch(size) {
+		case 8:
+			return function_arg_locations_8[n];
+		default:
+			return function_arg_locations[n];
+	}
+}
+
 int prep_function_args(ptree *tree, int argNumber)
 {
 	if(tree == NULL) return 0;
@@ -319,14 +330,22 @@ int prep_function_args(ptree *tree, int argNumber)
 	if(tree->body.a_parent.left->type == NODE_FUNCTION_ARG_CHAIN) {
 		argNumber = prep_function_args(tree->body.a_parent.left, argNumber);
 	} else {
-		printf("    movl   %s, %s\n", to_value(tree->body.a_parent.left), get_paramiter_location(argNumber));
+		char *val = to_value(tree->body.a_parent.left);
+		int size = get_var_size_by_location(local_vars, val);
+		//printf("Val '%s' size %d\n", val, size);
+		//printf("    movl   %s, %s\n", val, get_paramiter_location_by_size(argNumber, size));
+		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
 		argNumber++;
 		functions_args_prep++;
 	}
 	if(tree->body.a_parent.right->type == NODE_FUNCTION_ARG_CHAIN) {
 		argNumber = prep_function_args(tree->body.a_parent.right, argNumber);
 	} else {
-		printf("    movl   %s, %s\n", to_value(tree->body.a_parent.right) , get_paramiter_location(argNumber));
+		char *val = to_value(tree->body.a_parent.right);
+		int size = get_var_size_by_location(local_vars, val);
+		//printf("Val '%s' size %d\n", val, size);
+		//printf("    movl   %s, %s\n", val , get_paramiter_location_by_size(argNumber, size));
+		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
 		argNumber++;
 		functions_args_prep++;
 	}
@@ -366,6 +385,7 @@ void compile_tree_aux(ptree *tree)
 			int i;
 			for(i=0; i<6; i++) {
 				free_location(local_vars, get_paramiter_location(i));
+				free_location(local_vars, function_arg_locations_8[i]);
 			}
 			compile_tree_aux(tree->body.a_parent.right);
 			break;
@@ -389,10 +409,13 @@ void compile_tree_aux(ptree *tree)
 			functions_args_prep = 0;
 			break;
 		case NODE_PARAMITER_DEF:
+		case NODE_PARAMITER_DEF_POINTER:
 			type.name = tree->body.a_parent.left->body.a_string;
 			type.pointer = false;
-			type.size = 4; //TODO
-			add_local_var(local_vars, tree->body.a_parent.right->body.a_string, get_paramiter_location(params_set++), type);
+			type.size = tree->type==NODE_PARAMITER_DEF_POINTER ? 8 : 4; //TODO
+			char *param_location = type.size ==8 ? function_arg_locations_8[params_set] : get_paramiter_location(params_set);
+			params_set++;
+			add_local_var(local_vars, tree->body.a_parent.right->body.a_string, param_location, type);
 			break;
 		case NODE_PARAMITER_CHAIN:
 			compile_tree_aux(tree->body.a_parent.left);

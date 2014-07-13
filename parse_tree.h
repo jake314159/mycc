@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 enum tree_type {
-	NODE_INT, NODE_STRING, NODE_FLOAT, NODE_BODY, NODE_PARAMITER_DEF, NODE_PARAMITER_CHAIN,
+	NODE_INT, NODE_STRING, NODE_FLOAT, NODE_BODY, NODE_PARAMITER_DEF, NODE_PARAMITER_CHAIN, NODE_PARAMITER_DEF_POINTER,
 	NODE_STRING_CONST,
 	NODE_FUNCTION_DEF, NODE_FUNCTION_TYPE_NAME_PAIR, NODE_FUNCTION_PARAM_BODY_PAIR,
 	NODE_MAIN_EXTENDED, NODE_VAR, NODE_VAR_ASSIGN, NODE_VAR_DEF, NODE_VAR_GLOBAL_DEF,
@@ -29,7 +29,7 @@ ptree* make_node_int(int type);
 ptree* make_node_string(char *type);
 ptree* make_node_float(float type);
 ptree* make_node_body(ptree *line, ptree *remaining);
-ptree* make_node_paramiter_def(ptree *other_params, ptree *type, ptree *name);
+ptree* make_node_paramiter_def(ptree *other_params, ptree *type, ptree *name, bool pointer);
 ptree* make_node_function_def(ptree *type, bool pointer, ptree *name, ptree *params, ptree *body);
 ptree* make_main_extended(ptree *ext, ptree *line);
 void printTree(ptree *root, int depth);

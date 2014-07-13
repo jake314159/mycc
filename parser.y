@@ -57,8 +57,10 @@ paramiters:
 	| { $$=NULL; }
 ;
 paramitersNotZero:
-	  paramitersNotZero ',' STRING STRING { $$= make_node_paramiter_def($1, $3, $4); }
-	| STRING STRING { $$=make_node_paramiter_def(NULL, $1, $2); }
+	  paramitersNotZero ',' STRING STRING { $$= make_node_paramiter_def($1, $3, $4, false); }
+	| STRING STRING { $$=make_node_paramiter_def(NULL, $1, $2, false); }
+	| paramitersNotZero ',' STRING '*' STRING { $$= make_node_paramiter_def($1, $3, $5, true); }
+	| STRING '*' STRING { $$=make_node_paramiter_def(NULL, $1, $3, true); }
 ;
 
 functionBody:

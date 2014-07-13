@@ -289,13 +289,31 @@ void create_local_var(VAR_STORE *store, char* name, TYPE_DEF type)
 
 void free_location(VAR_STORE *store, char *location)
 {
+	bool freeLocation = false;
 	VAR_PAIR *pair = get_var_pair_for_location(store, location);
 	if(pair != NULL) {
 		//We need to move this variable somewhere else
-		stack_used += 4;
-		printf("    subq    $4, %%rsp\n"); //Add some space to the stack
-		printf("    movl    %s, -%d(%%rbp)\n", pair->location, stack_used);
+		int size = pair->type.size;
+		char moveType;
+		if(size == 8){
+			moveType = 'q';
+		/*	if(location[1] == 'e') {
+				//Register not big enough
+				char *c = malloc(sizeof(char)*20);
+				sprintf(c, "%s", location);
+				c[1] = 'r';
+				location = c;
+				printf("# Changing register to '%s' == '%s'\n", c, location);
+				freeLocation = true;
+			}*/
+		} else {
+			moveType = 'l';
+		}
+		stack_used += size;
+		printf("    subq    $%d, %%rsp\n",size); //Add some space to the stack
+		printf("    mov%c    %s, -%d(%%rbp)\n", moveType, pair->location, stack_used);
 		sprintf(pair->location, "-%d(%%rbp)", stack_used);
+		if(freeLocation) free(location);
 	}
 }
 
@@ -313,6 +331,18 @@ void empty_stack_of_local_vars()
 	if(stack_used > 0) {
 		printf("    addq    $%d, %%rsp\n", stack_used);
 		stack_used = 0;
+	}
+}
+
+int get_var_size_by_location(VAR_STORE *store, char *location)
+{
+	VAR_PAIR *pair = get_var_pair_for_location(store, location);
+	if(pair == NULL) {
+		//No idea so guess
+		//TODO do this more properly. What if it's a register for example. Or global
+		return 4;
+	} else {
+		return pair->type.size;
 	}
 }
 

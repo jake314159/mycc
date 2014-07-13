@@ -18,3 +18,5 @@ char* get_free_register(int size);
 void free_register(char *reg_to_free);
 void free_location(VAR_STORE *store, char *location);
 void empty_stack_of_local_vars();
+
+int get_var_size_by_location(VAR_STORE *store, char *location);
