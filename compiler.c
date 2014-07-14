@@ -12,6 +12,7 @@ char* to_value(ptree *tree);
 char* get_paramiter_location(int n);
 
 VAR_STORE *local_vars = NULL;
+VAR_STORE *global_vars = NULL;
 
 int functions_args_prep = 0; //Number of args we have prepared ready for a function call
 
@@ -29,6 +30,8 @@ void create_head(ptree *tree)
 		case NODE_INT:
 		case NODE_STRING:
 		case NODE_FLOAT:
+		case NODE_VAR_POINTER:
+		case NODE_VAR:
 			break;
 		case NODE_STRING_CONST:
 			printf("    .section    .rodata\n");
@@ -81,17 +84,17 @@ void move_values(char *from, char *too, int size)
 	}
 
 	char *move_cmd;
-	//int regSize = getRegisterSize(too);
 	if(size == 8) {
 		move_cmd = "movq";
 	} else {
 		move_cmd = "movl";
 	}
 	if(from_pointer && too_pointer) {
-		char *c = get_free_register(size);
-		printf("    %s    %s, %s\n", move_cmd, from, c);
-		printf("    %s    %s, %s\n", move_cmd, c, too);
-		free_register(c);
+        //We can't move between two pointers so use a register as a intermediary
+		char *reg = get_free_register(size);
+		printf("    %s    %s, %s\n", move_cmd, from, reg);
+		printf("    %s    %s, %s\n", move_cmd, reg, too);
+		free_register(reg);
 	} else if (!same) {
 		printf("    %s    %s, %s\n", move_cmd, from, too);
 	}
@@ -184,10 +187,16 @@ char* to_value(ptree *tree)
 			return c;
 		case NODE_VAR:
 			c = get_local_var_location(local_vars, tree->body.a_string);
+            if(c == NULL) {
+                c = get_local_var_location(global_vars, tree->body.a_string);
+            }
 			return c;
 			break;
 		case NODE_VAR_POINTER:
 			c = get_local_var_location(local_vars, tree->body.a_string);
+            if(c == NULL) {
+                c = get_local_var_location(global_vars, tree->body.a_string);
+            }
 			printf("    movq    %s, %%rax\n", c);
 			printf("    movl    (%%rax), %%eax\n");
 			c2 = get_stack_space(4);
@@ -196,6 +205,9 @@ char* to_value(ptree *tree)
 			break;
 		case NODE_VAR_TO_POINTER:
 			c = get_local_var_location(local_vars, tree->body.a_string);
+            if(c == NULL) {
+                c = get_local_var_location(global_vars, tree->body.a_string);
+            }
 			printf("    leaq    %s, %%rax\n", c);
 			c2 = get_stack_space(8);
 			printf("    movq    %%rax, %s\n", c2);
@@ -322,8 +334,21 @@ int prep_function_args(ptree *tree, int argNumber)
 		// from within local_vars)
 
 	if(argNumber == 0 && tree->type != NODE_FUNCTION_ARG_CHAIN) {
-		printf("    movl   %s, %s\n", to_value(tree), get_paramiter_location(0));
+        char *val = to_value(tree);
+		int size = get_var_size_by_location(local_vars, val);
+        if(size < 0) {
+            size = get_var_size_by_location(global_vars, val);
+        }
+        if(size < 0) {
+            printf("# I don't know what size '%s' is so i'm going to guess 4-byes\n", val);
+            size = 4; //Just a guess //TODO do more working out
+        }
+		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
+		//argNumber++;
 		functions_args_prep++;
+	
+		//printf("    movl   %s, %s\n", to_value(tree), get_paramiter_location(0));
+		//functions_args_prep++;
 		return argNumber;
 	}
 
@@ -332,6 +357,13 @@ int prep_function_args(ptree *tree, int argNumber)
 	} else {
 		char *val = to_value(tree->body.a_parent.left);
 		int size = get_var_size_by_location(local_vars, val);
+        if(size < 0) {
+            size = get_var_size_by_location(global_vars, val);
+        }
+        if(size < 0) {
+            printf("# I don't know what size '%s' is so i'm going to guess 4-byes\n", val);
+            size = 4; //Just a guess //TODO do more working out
+        }
 		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
 		argNumber++;
 		functions_args_prep++;
@@ -341,6 +373,13 @@ int prep_function_args(ptree *tree, int argNumber)
 	} else {
 		char *val = to_value(tree->body.a_parent.right);
 		int size = get_var_size_by_location(local_vars, val);
+        if(size < 0) {
+            size = get_var_size_by_location(global_vars, val);
+        }
+        if(size < 0) {
+            printf("# I don't know what size '%s' is so i'm going to guess 4-byes\n", val);
+            size = 4; //Just a guess //TODO do more working out
+        }
 		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
 		argNumber++;
 		functions_args_prep++;
@@ -352,11 +391,12 @@ void compile_tree_aux(ptree *tree)
 {
 	if(tree == NULL) printf("# NULL");
 
-	char *c1;
+	char *c1, *c2, *c3;
 	ptree *n1;
 	int i1;
 	bool b1;
 	TYPE_DEF type;
+	TYPE_DEF *t;
 
 	switch(tree->type) {
 		case NODE_FUNCTION_DEF:
@@ -418,10 +458,19 @@ void compile_tree_aux(ptree *tree)
 			compile_tree_aux(tree->body.a_parent.right);
 			break;
 		case NODE_VAR_ASSIGN:
-			set_local_var(local_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
+			b1 = set_local_var(local_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
+            if(!b1) {
+                //There isn't a local var with that name. But what about a global var?
+                b1 = set_local_var(global_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
+                if(!b1) printf("# I can't find a var called '%s' anywhere\n", tree->body.a_parent.left->body.a_string);
+            }
 			break;
 		case NODE_VAR_ASSIGN_POINTER:
-			set_local_var_pointer(local_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
+			b1 = set_local_var_pointer(local_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
+            if(!b1) {
+                b1 = set_local_var_pointer(global_vars, tree->body.a_parent.left->body.a_string, to_value(tree->body.a_parent.right));
+                if(!b1) printf("# I can't find a var called '%s' anywhere\n", tree->body.a_parent.left->body.a_string);
+            }
 			break;
 		case NODE_VAR_DEF:
 			type.name = tree->body.a_parent.left->body.a_string;
@@ -436,17 +485,29 @@ void compile_tree_aux(ptree *tree)
 			create_local_var(local_vars, tree->body.a_parent.right->body.a_string, type); //TODO use type to find size
 			break;
 		case NODE_VAR_GLOBAL_DEF:
+		case NODE_VAR_GLOBAL_DEF_POINTER:
+            b1 = tree->body.a_parent.left->type == NODE_VAR_GLOBAL_DEF_POINTER; //b1 == is a pointer?
 			c1 = tree->body.a_parent.left->body.a_parent.right->body.a_string; //var name
+			c2 = tree->body.a_parent.left->body.a_parent.left->body.a_string; //var type
 			n1 = tree->body.a_parent.right;
+			t = getType(c2, false);
+			if(t == NULL) printf("## Global var of type '%s' not found\n", c2);
+			type.name = t->name;
+			type.pointer = b1;//t->pointer;
+			type.size = t->size;
+			c3 = malloc(sizeof(char)*40);
+			sprintf(c3, "%s(%%rip)", c1);
+			add_local_var(global_vars, c1, c3, type);
+			//TODO also consider the size of the type
 			printf("\n\n"\
 			"    .globl	%s\n"\
 			"    .data\n"\
-			"    .align 4\n"\
+			"    .align %d\n"\
 			"    .type	%s, @object\n"\
-			"    .size	%s, 4\n"\
+			"    .size	%s, %d\n"\
 			"%s:\n"\
 			"    .long	%d\n"\
-			"    .text\n\n", c1,c1,c1,c1, n1==NULL?0:n1->body.a_int);
+			"    .text\n\n", c1,type.size, c1,c1,type.size,c1,(n1==NULL?0:n1->body.a_int));
 			break;
 		case NODE_IF:
 			if(tree->body.a_parent.extra == 0) {
@@ -509,6 +570,9 @@ void compile_tree_aux(ptree *tree)
 
 void compile_tree(ptree *tree)
 {
+	initTypeManager();
+	global_vars = malloc(sizeof(VAR_STORE));
+	init_local_store(global_vars);
 	create_head(tree);
 	compile_tree_aux(tree);
 }

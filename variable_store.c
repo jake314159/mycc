@@ -155,6 +155,9 @@ VAR_PAIR* get_last_pair(VAR_STORE *store)
 
 void add_local_var(VAR_STORE *store, char* name, char* location, TYPE_DEF type)
 {
+
+    if(type.pointer) type.size = 8;
+
 	if(store == NULL) return;
 	char *temp = malloc(sizeof(char) * (strlen(name) + 1));
 	strcpy(temp, name);
@@ -184,9 +187,10 @@ char* get_local_var_location(VAR_STORE *store, char *name)
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair == NULL) {
 		//assume it is a global variable
-		char *c = malloc(sizeof(char)*(strlen(name)+20));
-		sprintf(c, "%s(%%rip)", name);
-		return c;
+		//char *c = malloc(sizeof(char)*(strlen(name)+20));
+		//sprintf(c, "%s(%%rip)", name);                      //TODO This should be done by looking in the global_var data structure
+		//return c;
+        return NULL; //Can't find anything
 	} else {
 		return pair->location;
 	}
@@ -213,7 +217,7 @@ int getRegisterSize(char *reg)
 		return 2;
 	}
 }
-//Not compleate!!
+//Not complete!!
 char* convertReg(char *location, int targetSize)
 {
 	if(targetSize<=0 || targetSize>8) return NULL;
@@ -231,9 +235,9 @@ char* convertReg(char *location, int targetSize)
 	return returnReg;
 }
 
-void set_local_var(VAR_STORE *store, char* name, char* location)
+bool set_local_var(VAR_STORE *store, char* name, char* location)
 {
-	if(store == NULL) return;
+	if(store == NULL) return false;
 
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair != NULL) {
@@ -245,28 +249,34 @@ void set_local_var(VAR_STORE *store, char* name, char* location)
 			char *newLocation = convertReg(location, pair->type.size);
 			move_values(location, newLocation, pair->type.size);
 		}
+        return true;
 	} else {
 		//it's a global variable
-		char *c = malloc(sizeof(char) *(strlen(name)+20));
-		sprintf(c, "%s(%%rip)", name);
-		move_values(location, c, 4); //TODO find global var size
+        //TODO This sould be done by looking in the global_var list
+		//char *c = malloc(sizeof(char) *(strlen(name)+20));
+		//sprintf(c, "%s(%%rip)", name);
+		//move_values(location, c, 4); //TODO find global var size
+        return false;
 	}
 }
 
-void set_local_var_pointer(VAR_STORE *store, char* name, char* location)
+bool set_local_var_pointer(VAR_STORE *store, char* name, char* location)
 {
-	if(store == NULL) return;
+	if(store == NULL) return false;
 
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair != NULL) {
 		printf("    movq    %s, %%rax\n", pair->location);
 		printf("    movl    %s, (%%rax)\n", location);
+        return false;
 	} else {
 		//it's a global variable
-		char *c = malloc(sizeof(char) *(strlen(name)+20));
-		sprintf(c, "%s(%%rip)", name);
-		printf("    movq    %s, %%rax\n", c);
-		printf("    movl    %s, (%%rax)\n", location);
+        //TODO this should be done by looking in the global_var list
+		//char *c = malloc(sizeof(char) *(strlen(name)+20));
+		//sprintf(c, "%s(%%rip)", name);
+		//printf("    movq    %s, %%rax\n", c);
+		//printf("    movl    %s, (%%rax)\n", location);
+        return false;
 	}
 }
 
@@ -297,15 +307,6 @@ void free_location(VAR_STORE *store, char *location)
 		char moveType;
 		if(size == 8){
 			moveType = 'q';
-		/*	if(location[1] == 'e') {
-				//Register not big enough
-				char *c = malloc(sizeof(char)*20);
-				sprintf(c, "%s", location);
-				c[1] = 'r';
-				location = c;
-				printf("# Changing register to '%s' == '%s'\n", c, location);
-				freeLocation = true;
-			}*/
 		} else {
 			moveType = 'l';
 		}
@@ -338,9 +339,9 @@ int get_var_size_by_location(VAR_STORE *store, char *location)
 {
 	VAR_PAIR *pair = get_var_pair_for_location(store, location);
 	if(pair == NULL) {
-		//No idea so guess
+		//No idea so return an error code
 		//TODO do this more properly. What if it's a register for example. Or global
-		return 4;
+		return -1;
 	} else {
 		return pair->type.size;
 	}

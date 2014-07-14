@@ -32,3 +32,5 @@ mycc
 y.tab.c
 y.tab.h
 
+# Ignore vim swap files
+*.swp

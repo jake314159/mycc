@@ -314,6 +314,8 @@ void free_tree(ptree *root)
 		case NODE_STRING:
 		case NODE_STRING_CONST:
 		case NODE_FLOAT:
+		case NODE_VAR_POINTER:
+		case NODE_VAR:
 			free(root);
 			break;
 		default:
