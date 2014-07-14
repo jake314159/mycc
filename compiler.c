@@ -344,11 +344,7 @@ int prep_function_args(ptree *tree, int argNumber)
             size = 4; //Just a guess //TODO do more working out
         }
 		move_values(val, get_paramiter_location_by_size(argNumber, size), size);
-		//argNumber++;
 		functions_args_prep++;
-	
-		//printf("    movl   %s, %s\n", to_value(tree), get_paramiter_location(0));
-		//functions_args_prep++;
 		return argNumber;
 	}
 
@@ -525,43 +521,6 @@ void compile_tree_aux(ptree *tree)
 				printf(".L%d:\n", i1+1);
 			}
 			break;
-	//	case NODE_FUNCTION_ARG_CHAIN:
-	//		prep_function_args(tree, 1);
-	//		break;
-/*		case NODE_INT:
-			printf("Int %i\n", root->body.a_int);
-			break;
-		case NODE_STRING:
-			printf("String '%s'\n", root->body.a_string);
-			break;
-		case NODE_FLOAT:
-			printf("Float %f\n", root->body.a_float);
-			break;
-
-		case NODE_FUNCTION_TYPE_NAME_PAIR:
-			printf("Function type-name pair\n");
-			printTree(root->body.a_parent.left, depth+1);
-			printTree(root->body.a_parent.right, depth+1);
-			break;
-		case NODE_FUNCTION_PARAM_BODY_PAIR:
-			printf("Function param-body pair\n");
-			printTree(root->body.a_parent.left, depth+1);
-			printTree(root->body.a_parent.right, depth+1);
-			break;
-		case NODE_PARAMITER_DEF:
-			printf("Paramiter def\n");
-			printTree(root->body.a_parent.left, depth+1);
-			printTree(root->body.a_parent.right, depth+1);
-			break;
-		case NODE_PARAMITER_CHAIN:
-			printf("Paramiter chain\n");
-			printTree(root->body.a_parent.left, depth+1);
-			printTree(root->body.a_parent.right, depth+1);
-			break;
-		case NODE_RETURN:
-			printf("Return\n");
-			printTree(root->body.a_parent.left, depth+1);
-			break;*/
 		default:
 			printf("#Unknown %d\n", tree->type);
 			break;
