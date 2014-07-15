@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include "compiler.h"
 #include "variable_store.h"
+#include "function_store.h"
 
 char *function_arg_locations_8[6]  = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 char *function_arg_locations[6]  = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
@@ -13,6 +14,7 @@ char* get_paramiter_location(int n);
 
 VAR_STORE *local_vars = NULL;
 VAR_STORE *global_vars = NULL;
+VAR_STORE *func_store = NULL;
 
 int functions_args_prep = 0; //Number of args we have prepared ready for a function call
 
@@ -181,9 +183,16 @@ char* to_value(ptree *tree)
 				prep_function_args(tree->body.a_parent.right, 0);
 				printf("    call    %s\n", tree->body.a_parent.left->body.a_string);
 			}
-
+            
+            FUNC_ENTRY* func_def = get_function_entry(func_store, tree->body.a_parent.left->body.a_string);
+            int size = func_def == NULL ? 4 : func_def->type.size;
+            printf("## Func def of '%s' is %x size %d\n",tree->body.a_parent.left->body.a_string, func_def, size);
 			functions_args_prep = 0;
-			sprintf(c, "%%eax");
+            if(size == 8) {
+                sprintf(c, "%%rax");
+            } else {
+                sprintf(c, "%%eax");
+            }
 			return c;
 		case NODE_VAR:
 			c = get_local_var_location(local_vars, tree->body.a_string);
@@ -396,6 +405,9 @@ void compile_tree_aux(ptree *tree)
 
 	switch(tree->type) {
 		case NODE_FUNCTION_DEF:
+            if(!add_function_to_store(func_store, tree)) {
+                printf("## Function already defined\n");
+            }
 			//b1 == is it going to return a pointer?
 			b1 = tree->body.a_parent.left->type == NODE_FUNCTION_TYPE_POINTER_NAME_PAIR;
 			function_return_size = b1 ? 8 : 4;
@@ -503,7 +515,7 @@ void compile_tree_aux(ptree *tree)
 			"    .size	%s, %d\n"\
 			"%s:\n"\
 			"    .long	%d\n"\
-			"    .text\n\n", c1,type.size, c1,c1,type.size,c1,(n1==NULL?0:n1->body.a_int));
+			"    .text\n\n", c1,type.size, c1,c1,type.size,c1,(n1==NULL?0:n1->body.a_int)); //TODO what if n1 isn't a int!
 			break;
 		case NODE_IF:
 			if(tree->body.a_parent.extra == 0) {
@@ -531,7 +543,9 @@ void compile_tree(ptree *tree)
 {
 	initTypeManager();
 	global_vars = malloc(sizeof(VAR_STORE));
+    func_store = malloc(sizeof(VAR_STORE));
 	init_local_store(global_vars);
+    init_funk_store(func_store);
 	create_head(tree);
 	compile_tree_aux(tree);
 }

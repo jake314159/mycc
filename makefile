@@ -9,8 +9,8 @@ parse_tree.o: parse_tree.c
 compiler.o: compiler.c
 	gcc $(CC_FLAGS) -c compiler.c
 
-mycc: lex.yy.c y.tab.c parse_tree.o compiler.o variable_store.o type_manager.o
-	gcc $(CC_FLAGS) lex.yy.c y.tab.c parse_tree.o compiler.o variable_store.o type_manager.o -o mycc -lfl
+mycc: lex.yy.c y.tab.c parse_tree.o compiler.o variable_store.o type_manager.o function_store.o
+	gcc $(CC_FLAGS) lex.yy.c y.tab.c parse_tree.o compiler.o variable_store.o type_manager.o function_store.o -o mycc -lfl
 
 y.tab.c: parser.y
 	yacc -d parser.y
@@ -24,3 +24,6 @@ variable_store.o: variable_store.c
 
 type_manager.o: type_manager.c
 	gcc $(CC_FLAGS) -c type_manager.c
+
+function_store.o: function_store.c
+	gcc $(CC_FLAGS) -c function_store.c

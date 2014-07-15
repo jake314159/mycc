@@ -1,9 +1,5 @@
 #include "type_manager.h"
-
-typedef struct {
-	char type;
-	void *contents;
-} VAR_STORE;
+#include "store.h"
 
 void init_local_store(VAR_STORE *store);
 void add_local_var(VAR_STORE *store, char* name, char* location, TYPE_DEF type);

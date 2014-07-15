@@ -186,10 +186,6 @@ char* get_local_var_location(VAR_STORE *store, char *name)
 
 	VAR_PAIR *pair = get_var_pair(store, name);
 	if(pair == NULL) {
-		//assume it is a global variable
-		//char *c = malloc(sizeof(char)*(strlen(name)+20));
-		//sprintf(c, "%s(%%rip)", name);                      //TODO This should be done by looking in the global_var data structure
-		//return c;
         return NULL; //Can't find anything
 	} else {
 		return pair->location;
@@ -251,11 +247,6 @@ bool set_local_var(VAR_STORE *store, char* name, char* location)
 		}
         return true;
 	} else {
-		//it's a global variable
-        //TODO This sould be done by looking in the global_var list
-		//char *c = malloc(sizeof(char) *(strlen(name)+20));
-		//sprintf(c, "%s(%%rip)", name);
-		//move_values(location, c, 4); //TODO find global var size
         return false;
 	}
 }
@@ -270,12 +261,6 @@ bool set_local_var_pointer(VAR_STORE *store, char* name, char* location)
 		printf("    movl    %s, (%%rax)\n", location);
         return false;
 	} else {
-		//it's a global variable
-        //TODO this should be done by looking in the global_var list
-		//char *c = malloc(sizeof(char) *(strlen(name)+20));
-		//sprintf(c, "%s(%%rip)", name);
-		//printf("    movq    %s, %%rax\n", c);
-		//printf("    movl    %s, (%%rax)\n", location);
         return false;
 	}
 }
