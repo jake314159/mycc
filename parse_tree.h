@@ -7,7 +7,7 @@ enum tree_type {
 	NODE_STRING_CONST,
 	NODE_FUNCTION_DEF, NODE_FUNCTION_TYPE_NAME_PAIR, NODE_FUNCTION_PARAM_BODY_PAIR,
 	NODE_MAIN_EXTENDED, NODE_VAR, NODE_VAR_ASSIGN, NODE_VAR_DEF, NODE_VAR_GLOBAL_DEF,
-	NODE_ADD, NODE_SUB, NODE_U_MINUS, NODE_MULT,
+	NODE_ADD, NODE_SUB, NODE_U_MINUS, NODE_MULT, NODE_DIV,
 	NODE_FUNCTION_CALL, NODE_FUNCTION_ARG_CHAIN,
 	NODE_IF, NODE_FUNCTION_TYPE_POINTER_NAME_PAIR, NODE_VAR_TO_POINTER,
 	NODE_VAR_POINTER, NODE_VAR_DEF_POINTER, NODE_VAR_GLOBAL_DEF_POINTER, NODE_VAR_ASSIGN_POINTER,
@@ -52,6 +52,7 @@ ptree* make_var_def_pointer(ptree *varType, ptree *name);
 ptree* make_node_global_var_def_pointer(ptree *varType, ptree *name, ptree *default_value);
 ptree* make_var_assign_pointer(ptree *varName, ptree *value);
 ptree* make_node_var_to_pointer(ptree *string_node);
+ptree* make_node_div(ptree *left, ptree *right);
 
 ptree* make_var_def(ptree *varType, ptree *name);
 

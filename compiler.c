@@ -243,6 +243,15 @@ char* to_value(ptree *tree)
 			sprintf(c, "%%r10d");
 			return c;
 			break;
+		case NODE_DIV:
+			move_values(to_value(tree->body.a_parent.left), "%eax", 4);
+			move_values(to_value(tree->body.a_parent.right), "%r10d", 4);
+            printf("    cltd\n");
+            printf("    idivl   %%r10d\n");
+			c = malloc(sizeof(char)*20);
+			sprintf(c, "%%eax");
+			return c;
+			break;
 		case NODE_U_MINUS:
 			c = to_value(tree->body.a_parent.left);
 			printf("    movl    %s, %%r10d\n", c);
@@ -506,7 +515,6 @@ void compile_tree_aux(ptree *tree)
 			c3 = malloc(sizeof(char)*40);
 			sprintf(c3, "%s(%%rip)", c1);
 			add_local_var(global_vars, c1, c3, type);
-			//TODO also consider the size of the type
 			printf("\n\n"\
 			"    .globl	%s\n"\
 			"    .data\n"\

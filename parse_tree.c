@@ -142,6 +142,11 @@ void printTree(ptree *root, int depth)
 			printTree(root->body.a_parent.left, depth+1);
 			printTree(root->body.a_parent.right, depth+1);
 			break;
+		case NODE_DIV:
+			printf("[/]\n");
+			printTree(root->body.a_parent.left, depth+1);
+			printTree(root->body.a_parent.right, depth+1);
+			break;
 		case NODE_U_MINUS:
 			printf("[U-]\n");
 			printTree(root->body.a_parent.left, depth+1);
@@ -407,6 +412,16 @@ ptree* make_node_mult(ptree *left, ptree *right)
 {
 	ptree *node = malloc(sizeof(ptree));
 	node->type = NODE_MULT;
+	node->body.a_parent.left = left;
+	node->body.a_parent.right = right;
+	return node;
+}
+
+
+ptree* make_node_div(ptree *left, ptree *right)
+{
+	ptree *node = malloc(sizeof(ptree));
+	node->type = NODE_DIV;
 	node->body.a_parent.left = left;
 	node->body.a_parent.right = right;
 	return node;
